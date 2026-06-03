@@ -99,17 +99,25 @@ def sections(lang):
 
         ("H1", "2. System Architecture", "2. 시스템 아키텍처"),
         ("B",
-         "The system follows a three-tier layered architecture: a React 19 SPA served "
-         "by an unprivileged nginx container; a single FastAPI app internally split into "
-         "Controller, Service, and Repository layers with the forecasting/optimization "
-         "core isolated as pure, dependency-free code; and a data tier of PostgreSQL "
-         "(Cloud SQL) in production or embedded SQLite for the demo.",
-         "시스템은 3계층 레이어드 아키텍처를 따른다. 표현 계층은 비특권 nginx가 서빙하는 React 19 SPA, "
-         "업무 계층은 Controller·Service·Repository로 분리된 단일 FastAPI이며 예측·최적화 Core는 순수 "
-         "코드로 격리된다. 데이터 계층은 프로덕션 PostgreSQL(Cloud SQL), 데모 내장 SQLite이다."),
+         "The architecture is organised as three logical layers, with the runtime "
+         "platform and CI/CD modelled as a separate cross-cutting tier rather than a "
+         "fourth layer. The Presentation layer is a React 19 SPA served by an "
+         "unprivileged nginx container; the Business layer is a single FastAPI app "
+         "internally split into Controller, Service, and Repository, with the "
+         "forecasting/optimization core isolated as pure, dependency-free code; and the "
+         "Data layer is PostgreSQL (Cloud SQL) in production or embedded SQLite for the "
+         "demo. Dependencies flow strictly downward, and the pure core is unit-tested "
+         "without a database.",
+         "아키텍처는 3개 논리 계층으로 구성되며, 런타임 플랫폼과 CI/CD는 4번째 계층이 아니라 별도의 "
+         "교차 관심사(cross-cutting) 계층으로 모델링한다. 표현(Presentation) 계층은 비특권 nginx가 "
+         "서빙하는 React 19 SPA, 업무(Business) 계층은 Controller·Service·Repository로 분리된 단일 "
+         "FastAPI이며 예측·최적화 Core는 순수 코드로 격리된다. 데이터(Data) 계층은 프로덕션 "
+         "PostgreSQL(Cloud SQL), 데모 내장 SQLite이다. 의존성은 아래로만 흐르고 순수 Core는 DB 없이 "
+         "단위 테스트된다."),
         ("IMG", ("architecture",
-                 "Figure 1. Layered system architecture (official OSS brand logos).",
-                 "그림 1. 공식 오픈소스 브랜드 로고로 구성한 시스템 아키텍처.", 6.4)),
+                 "Figure 1. Three logical layers; runtime platform & CI/CD as a separate "
+                 "cross-cutting tier (official OSS brand logos).",
+                 "그림 1. 3개 논리 계층, 런타임 플랫폼·CI/CD는 별도 교차 계층 (공식 OSS 브랜드 로고).", 6.4)),
         ("H2", "2.1. How it runs (operational architecture)", "2.1. 구동 방식 (어떤 아키텍처로 운영되는가)"),
         ("B",
          "MetricLens runs GCP-natively and serverless. Front and back ends are built into "

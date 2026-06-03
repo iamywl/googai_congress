@@ -27,14 +27,15 @@ GPU 없이 범용 CPU만으로 구동되는 경량 시계열 모델로 부하를
 
 ## 2. 시스템 아키텍처
 
-Presentation / Business / Data Access 3계층, 백엔드는 Controller → Service →
-Repository 수직 분리에 순수 Core(예측·최적화) 격리. 상세: [02_architecture_volume.md](02_architecture_volume.md),
-[06_infrastructure_layout.md](06_infrastructure_layout.md).
+**3개 논리 계층**(Presentation / Business / Data)로 구성하고, **런타임 플랫폼·CI/CD는
+4번째 계층이 아니라 별도의 교차 관심사(cross-cutting) 계층**으로 분리한다. 백엔드는
+Controller → Service → Repository 수직 분리에 순수 Core(예측·최적화) 격리. 상세:
+[02_architecture_volume.md](02_architecture_volume.md), [06_infrastructure_layout.md](06_infrastructure_layout.md).
 
 ![MetricLens AI 시스템 아키텍처](diagrams/architecture.png)
 
-> 공식 오픈소스 브랜드 로고(Simple Icons, CC0)로 구성. 재생성:
-> `python scripts/build_architecture_diagram.py`.
+> 흰 박스·검은 선 논문 스타일, 공식 오픈소스 브랜드 로고(Simple Icons, CC0)로 구성.
+> 재생성: `python scripts/build_architecture_diagram.py` (EN + `_kr` 동시 생성).
 
 - **Presentation**: React 19 + ECharts SPA → nginx(non-root) → Cloud Run `metriclens-frontend`
 - **Business**: FastAPI(레이어드) → Cloud Run `metriclens-backend` (non-root uid 10001)
