@@ -20,7 +20,8 @@ import InfoTip from './components/InfoTip.jsx';
 import NavBar from './components/NavBar.jsx';
 import HistoryView from './views/HistoryView.jsx';
 import TestsView from './views/TestsView.jsx';
-import { GLOSSARY } from './glossary.js';
+import { glossary } from './glossary.js';
+import { useT } from './i18n.jsx';
 import './App.css';
 
 export default function App() {
@@ -36,6 +37,8 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [baseline, setBaseline] = useState(1);
   const [view, setView] = useState('dashboard');
+  const { t, lang, setLang } = useT();
+  const GL = glossary(lang);
 
   // Capacity at which each host's metrics were measured, so projected
   // utilisation can be recomputed as the allocation is resized. Written/read
@@ -135,15 +138,20 @@ export default function App() {
           <span className="logo">◧</span>
           <div>
             <h1>MetricLens AI</h1>
-            <p>Time-series load forecasting &amp; resizing optimisation</p>
+            <p>{t('subtitle')}</p>
           </div>
         </div>
         <div className="topbar-right">
-          <a className="deck-link" href="/presentation.html" target="_blank" rel="noreferrer">
-            📊 Slides
+          <div className="lang-toggle">
+            <button className={lang === 'en' ? 'on' : ''} onClick={() => setLang('en')}>EN</button>
+            <button className={lang === 'ko' ? 'on' : ''} onClick={() => setLang('ko')}>한국어</button>
+          </div>
+          <a className="deck-link" href={lang === 'ko' ? '/presentation_kr.html' : '/presentation.html'}
+             target="_blank" rel="noreferrer">
+            {t('slides')}
           </a>
           <span className={`badge ${live ? 'live' : 'demo'}`}>
-            {live ? '● live' : '● demo data'}
+            {live ? t('live') : t('demo')}
           </span>
         </div>
       </header>
@@ -188,8 +196,8 @@ export default function App() {
           {metrics.length > 0 && selected && (
             <div className="panel">
               <h3>
-                Projected Utilisation @ {selected.vcpu_count} vCPU
-                <InfoTip text={GLOSSARY.projectedUtil} label="예상 가동률" />
+                {t('projUtil')} @ {selected.vcpu_count} vCPU
+                <InfoTip text={GL.projectedUtil} label={t('projUtil')} />
               </h3>
               <Gauge value={projectedUtil} label="projected %" />
               <ResizeControls
@@ -233,10 +241,7 @@ export default function App() {
         </>
       )}
 
-      <footer className="footer">
-        MetricLens AI · lightweight CPU-only forecasting · target MAPE ≤ 15% ·
-        SLO 99.9%
-      </footer>
+      <footer className="footer">{t('footer')}</footer>
     </div>
   );
 }

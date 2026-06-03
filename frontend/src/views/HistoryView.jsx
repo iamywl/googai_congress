@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchAllActions, fetchMetrics } from '../api.js';
 import InfoTip from '../components/InfoTip.jsx';
-import { GLOSSARY } from '../glossary.js';
+import { glossary } from '../glossary.js';
+import { useT } from '../i18n.jsx';
 
 // Full history browser: a fleet-wide audit log plus the complete metric history
 // for any selected host, so every past prediction, resize, and measurement can
 // be read end to end.
 export default function HistoryView({ hosts }) {
+  const { t, lang } = useT();
+  const GL = glossary(lang);
   const [actions, setActions] = useState([]);
   const [picked, setPicked] = useState(null);
   const [metrics, setMetrics] = useState(null);
@@ -50,12 +53,12 @@ export default function HistoryView({ hosts }) {
     <div className="history">
       <section className="panel">
         <h3>
-          Fleet Activity Log
-          <InfoTip text={GLOSSARY.activityLog} label="활동 로그" />
+          {t('hvFleetLog')}
+          <InfoTip text={GL.activityLog} label={t('hvFleetLog')} />
         </h3>
-        <p className="rec-note">모든 호스트의 과거 예측·리사이즈 기록(최신순, 영속 저장).</p>
+        <p className="rec-note">{t('hvFleetDesc')}</p>
         {actions.length === 0 ? (
-          <p className="rec-note">아직 기록이 없습니다.</p>
+          <p className="rec-note">{t('hvEmpty')}</p>
         ) : (
           <ul className="log tall">
             {actions.map((a) => (
@@ -66,7 +69,7 @@ export default function HistoryView({ hosts }) {
                   <span className="log-meta">
                     {fmt(a.ts)}
                     {a.saving_pct != null && a.saving_pct > 0 && (
-                      <em className="log-saving">−{a.saving_pct}% capacity</em>
+                      <em className="log-saving">−{a.saving_pct}% {t('alCapacity')}</em>
                     )}
                   </span>
                 </div>
@@ -77,7 +80,7 @@ export default function HistoryView({ hosts }) {
       </section>
 
       <section className="panel">
-        <h3>Metric History</h3>
+        <h3>{t('hvMetricHistory')}</h3>
         <div className="history-hosts">
           {hosts.map((h) => (
             <button
@@ -92,21 +95,21 @@ export default function HistoryView({ hosts }) {
 
         {stats && (
           <div className="history-stats">
-            <span>표본 <strong>{stats.samples}</strong></span>
-            <span>기간 <strong>{fmt(stats.from)} ~ {fmt(stats.to)}</strong></span>
-            <span>CPU 평균/최대 <strong>{stats.cpuAvg}% / {stats.cpuMax}%</strong></span>
-            <span>메모리 평균/최대 <strong>{stats.memAvg}% / {stats.memMax}%</strong></span>
+            <span>{t('hvSamples')} <strong>{stats.samples}</strong></span>
+            <span>{t('hvPeriod')} <strong>{fmt(stats.from)} ~ {fmt(stats.to)}</strong></span>
+            <span>{t('hvCpuAvgMax')} <strong>{stats.cpuAvg}% / {stats.cpuMax}%</strong></span>
+            <span>{t('hvMemAvgMax')} <strong>{stats.memAvg}% / {stats.memMax}%</strong></span>
           </div>
         )}
 
         <div className="table-wrap">
           {loading ? (
-            <p className="rec-note">불러오는 중…</p>
+            <p className="rec-note">{t('hvLoading')}</p>
           ) : (
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Timestamp</th>
+                  <th>{t('thTimestamp')}</th>
                   <th>CPU %</th>
                   <th>Memory %</th>
                   <th>Net In (kbps)</th>

@@ -1,8 +1,11 @@
 import InfoTip from './InfoTip.jsx';
-import { GLOSSARY } from '../glossary.js';
+import { glossary } from '../glossary.js';
+import { useT } from '../i18n.jsx';
 
 // Fleet-level summary cards — an at-a-glance overview above the per-host detail.
 export default function KpiStrip({ fleet }) {
+  const { t, lang } = useT();
+  const GL = glossary(lang);
   const hosts = fleet.length;
   const reclaimableVcpu = fleet.reduce(
     (sum, f) => sum + Math.max(0, f.rec.current_vcpu - f.rec.recommended_vcpu),
@@ -18,11 +21,11 @@ export default function KpiStrip({ fleet }) {
     : 0;
 
   const cards = [
-    { label: 'Hosts monitored', value: hosts, unit: '', info: GLOSSARY.hostsMonitored },
-    { label: 'Reclaimable vCPU', value: reclaimableVcpu, unit: 'cores', accent: 'good', info: GLOSSARY.reclaimableVcpu },
-    { label: 'Reclaimable memory', value: reclaimableGb.toFixed(0), unit: 'GB', accent: 'good', info: GLOSSARY.reclaimableMemory },
-    { label: 'Avg. cost saving', value: avgSaving, unit: '%', accent: 'good', info: GLOSSARY.avgSaving },
-    { label: 'SLO maintained', value: '99.9', unit: '%', info: GLOSSARY.sloMaintained },
+    { label: t('kpiHosts'), value: hosts, unit: '', info: GL.hostsMonitored },
+    { label: t('kpiReclVcpu'), value: reclaimableVcpu, unit: t('unitCores'), accent: 'good', info: GL.reclaimableVcpu },
+    { label: t('kpiReclMem'), value: reclaimableGb.toFixed(0), unit: 'GB', accent: 'good', info: GL.reclaimableMemory },
+    { label: t('kpiSaving'), value: avgSaving, unit: '%', accent: 'good', info: GL.avgSaving },
+    { label: t('kpiSlo'), value: '99.9', unit: '%', info: GL.sloMaintained },
   ];
 
   return (

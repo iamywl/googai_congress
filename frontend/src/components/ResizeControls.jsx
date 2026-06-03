@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import InfoTip from './InfoTip.jsx';
-import { GLOSSARY } from '../glossary.js';
+import { glossary } from '../glossary.js';
+import { useT } from '../i18n.jsx';
 import { nearestMachineType } from '../api.js';
 
 // Interactive HW-sizing controls. Every button issues a REAL, persisted resize
@@ -21,6 +22,8 @@ export default function ResizeControls({
   machineTypes = [],
   busy,
 }) {
+  const { t, lang } = useT();
+  const GL = glossary(lang);
   const zone = util > 85 ? 'warn' : util > 65 ? '' : 'good';
   const canApply = recommended != null && recommended !== current;
 
@@ -39,21 +42,21 @@ export default function ResizeControls({
   const [picked, setPicked] = useState('');
 
   function handleApplyType() {
-    const t = machineTypes.find((m) => m.name === picked);
-    if (t) onSelectType?.(t);
+    const mt = machineTypes.find((m) => m.name === picked);
+    if (mt) onSelectType?.(mt);
   }
 
   return (
     <div className="panel inner">
       <h3>
-        Interactive HW Resizing
-        <InfoTip text={GLOSSARY.resizeTarget} label="리사이징" />
+        {t('rcTitle')}
+        <InfoTip text={GL.resizeTarget} label={t('rcTitle')} />
       </h3>
 
       <div className="metric-row">
         <span>
-          Current allocation
-          <InfoTip text={GLOSSARY.currentAlloc} label="현재 할당" />
+          {t('rcCurrent')}
+          <InfoTip text={GL.currentAlloc} label={t('rcCurrent')} />
         </span>
         <strong>
           {current} vCPU · {(currentMemoryMb / 1024).toFixed(0)} GB
@@ -62,23 +65,23 @@ export default function ResizeControls({
       {currentType && (
         <div className="metric-row">
           <span>
-            GCP machine type
-            <InfoTip text={GLOSSARY.machineType} label="머신 타입" />
+            {t('rcMachine')}
+            <InfoTip text={GL.machineType} label={t('rcMachine')} />
           </span>
           <strong className="mtype-chip">{currentType.name}</strong>
         </div>
       )}
       <div className="metric-row">
         <span>
-          Projected peak utilisation
-          <InfoTip text={GLOSSARY.projectedUtil} label="예상 가동률" />
+          {t('rcPeak')}
+          <InfoTip text={GL.projectedUtil} label={t('rcPeak')} />
         </span>
         <strong className={zone}>{Math.round(util)}%</strong>
       </div>
 
       {machineTypes.length > 0 && (
         <div className="mtype-picker">
-          <label htmlFor="mtype-select">Resize to GCP instance</label>
+          <label htmlFor="mtype-select">{t('rcResizeTo')}</label>
           <div className="mtype-row">
             <select
               id="mtype-select"
@@ -86,7 +89,7 @@ export default function ResizeControls({
               disabled={busy}
               onChange={(e) => setPicked(e.target.value)}
             >
-              <option value="">Select machine type…</option>
+              <option value="">{t('rcSelect')}</option>
               {Object.entries(grouped).map(([series, list]) => (
                 <optgroup key={series} label={`${series} series`}>
                   {list.map((m) => (
@@ -102,7 +105,7 @@ export default function ResizeControls({
               onClick={handleApplyType}
               disabled={busy || !picked}
             >
-              Apply
+              {t('rcApply')}
             </button>
           </div>
         </div>
@@ -110,10 +113,10 @@ export default function ResizeControls({
 
       <div className="btn-row">
         <button className="btn" onClick={onScaleDown} disabled={busy || current <= 1}>
-          ↓ Halve vCPU
+          {t('rcHalve')}
         </button>
         <button className="btn" onClick={onScaleUp} disabled={busy || current >= 256}>
-          ↑ Double vCPU
+          {t('rcDouble')}
         </button>
       </div>
       <button
@@ -121,10 +124,10 @@ export default function ResizeControls({
         onClick={onApply}
         disabled={busy || !canApply}
       >
-        ✓ Apply AI recommendation{recommended != null ? ` → ${recommended} vCPU` : ''}
+        {t('rcApplyRec')}{recommended != null ? ` → ${recommended} vCPU` : ''}
       </button>
       <button className="btn wide" onClick={onForecast} disabled={busy}>
-        {busy ? 'Working…' : '▶ Run forecast'}
+        {busy ? t('rcWorking') : t('rcRun')}
       </button>
     </div>
   );

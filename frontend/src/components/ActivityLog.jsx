@@ -1,29 +1,33 @@
 import InfoTip from './InfoTip.jsx';
-import { GLOSSARY } from '../glossary.js';
+import { glossary } from '../glossary.js';
+import { useT } from '../i18n.jsx';
 
 // Audit trail of forecasts run and resizes applied — persisted server-side, so
 // it survives reloads and makes the "predict → resize" loop tangible.
 export default function ActivityLog({ actions }) {
+  const { t, lang } = useT();
+  const GL = glossary(lang);
+  const fmt = (ts) => (ts ? ts.replace('T', ' ').slice(5, 19) : '');
+
+  const head = (
+    <h3>
+      {t('alTitle')}
+      <InfoTip text={GL.activityLog} label={t('alTitle')} />
+    </h3>
+  );
+
   if (!actions.length) {
     return (
       <div className="panel">
-        <h3>
-          Activity Log
-          <InfoTip text={GLOSSARY.activityLog} label="활동 로그" />
-        </h3>
-        <p className="rec-note">No actions yet. Apply a resize or run a forecast.</p>
+        {head}
+        <p className="rec-note">{t('alEmpty')}</p>
       </div>
     );
   }
 
-  const fmt = (ts) => (ts ? ts.replace('T', ' ').slice(5, 19) : '');
-
   return (
     <div className="panel">
-      <h3>
-        Activity Log
-        <InfoTip text={GLOSSARY.activityLog} label="활동 로그" />
-      </h3>
+      {head}
       <ul className="log">
         {actions.map((a) => (
           <li key={a.id} className={`log-item ${a.action_type.toLowerCase()}`}>
@@ -33,7 +37,7 @@ export default function ActivityLog({ actions }) {
               <span className="log-meta">
                 {fmt(a.ts)}
                 {a.saving_pct != null && a.saving_pct > 0 && (
-                  <em className="log-saving">−{a.saving_pct}% capacity</em>
+                  <em className="log-saving">−{a.saving_pct}% {t('alCapacity')}</em>
                 )}
               </span>
             </div>

@@ -1,9 +1,12 @@
 import InfoTip from './InfoTip.jsx';
-import { GLOSSARY } from '../glossary.js';
+import { glossary } from '../glossary.js';
+import { useT } from '../i18n.jsx';
 
 // Resizing guidance card: current vs recommended allocation, the nearest GCP
 // instance for each, projected saving, and the SLO confidence preserved.
 export default function RecommendationCard({ recommendation: rec }) {
+  const { t, lang } = useT();
+  const GL = glossary(lang);
   const vcpuDelta = rec.current_vcpu - rec.recommended_vcpu;
   const memDelta = rec.current_memory_mb - rec.recommended_memory_mb;
   const downsizing = vcpuDelta > 0 || memDelta > 0;
@@ -13,12 +16,12 @@ export default function RecommendationCard({ recommendation: rec }) {
   return (
     <div className="panel">
       <h3>
-        Resizing Recommendation
-        <InfoTip text={GLOSSARY.machineType} label="권장안" />
+        {t('recTitle')}
+        <InfoTip text={GL.machineType} label={t('recTitle')} />
       </h3>
       <div className="rec-grid">
         <div>
-          <span className="label">vCPU</span>
+          <span className="label">{t('recVcpu')}</span>
           <div className="rec-value">
             <span className="from">{rec.current_vcpu}</span>
             <span className="arrow">→</span>
@@ -26,7 +29,7 @@ export default function RecommendationCard({ recommendation: rec }) {
           </div>
         </div>
         <div>
-          <span className="label">Memory</span>
+          <span className="label">{t('recMemory')}</span>
           <div className="rec-value">
             <span className="from">{(rec.current_memory_mb / 1024).toFixed(0)}G</span>
             <span className="arrow">→</span>
@@ -37,8 +40,8 @@ export default function RecommendationCard({ recommendation: rec }) {
       {fromType && toType && (
         <div className="metric-row">
           <span>
-            GCP instance
-            <InfoTip text={GLOSSARY.machineType} label="머신 타입" />
+            {t('recInstance')}
+            <InfoTip text={GL.machineType} label={t('recInstance')} />
           </span>
           <strong className="mtype-pair">
             <span className="mtype-chip dim">{fromType.name}</span>
@@ -49,8 +52,8 @@ export default function RecommendationCard({ recommendation: rec }) {
       )}
       <div className="metric-row">
         <span>
-          Est. cost saving
-          <InfoTip text={GLOSSARY.costSaving} label="비용 절감" />
+          {t('recSaving')}
+          <InfoTip text={GL.costSaving} label={t('recSaving')} />
         </span>
         <strong className={downsizing ? 'good' : ''}>
           {rec.est_cost_saving_pct.toFixed(0)}%
@@ -58,15 +61,13 @@ export default function RecommendationCard({ recommendation: rec }) {
       </div>
       <div className="metric-row">
         <span>
-          SLO confidence
-          <InfoTip text={GLOSSARY.sloConfidence} label="SLO 신뢰도" />
+          {t('recSlo')}
+          <InfoTip text={GL.sloConfidence} label={t('recSlo')} />
         </span>
         <strong>{rec.slo_confidence.toFixed(2)}%</strong>
       </div>
       <p className="rec-note">
-        {downsizing
-          ? `Headroom detected — downsizing keeps utilisation under target while holding ${rec.slo_confidence}% availability.`
-          : 'Current allocation is near-optimal for the forecasted load.'}
+        {downsizing ? t('recNoteDown') : t('recNoteOk')}
       </p>
     </div>
   );

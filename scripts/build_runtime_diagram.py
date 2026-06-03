@@ -108,13 +108,33 @@ def arrow(x1, y1, x2, y2, label="", lx=None, ly=None):
     return s
 
 
+def parrow(pts, label="", lx=None, ly=None, anchor="middle"):
+    """Orthogonal polyline arrow through waypoints; arrowhead at the last point.
+
+    Routes elbows so flows never cross — used for the real-fleet control loop.
+    """
+    ah = 7
+    (x1, y1), (x2, y2) = pts[-2], pts[-1]
+    ang = math.atan2(y2 - y1, x2 - x1)
+    ex, ey = x2 - ah * math.cos(ang), y2 - ah * math.sin(ang)
+    seq = pts[:-1] + [(ex, ey)]
+    d = "M" + " L".join(f"{x:.1f},{y:.1f}" for x, y in seq)
+    p1 = (x2 - ah * math.cos(ang - 0.5), y2 - ah * math.sin(ang - 0.5))
+    p2 = (x2 - ah * math.cos(ang + 0.5), y2 - ah * math.sin(ang + 0.5))
+    s = (f'<path d="{d}" fill="none" stroke="{ARROW}" stroke-width="1.5"/>'
+         f'<path d="M{x2:.1f},{y2:.1f} L{p1[0]:.1f},{p1[1]:.1f} L{p2[0]:.1f},{p2[1]:.1f} Z" fill="{ARROW}"/>')
+    if label:
+        s += text(lx, ly, label, 10.5, SUB, anchor=anchor)
+    return s
+
+
 def band(x, y, w, h, label, sub):
     return (f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="10" fill="{BAND}" stroke="{BAND_BORDER}"/>'
             + text(x + 16, y + 22, label, 13, INK, "bold") + text(x + 16, y + 39, sub, 10, SUB))
 
 
 def build_one(paths, lang, suf):
-    T = TR[lang]; W, H = 1140, 600
+    T = TR[lang]; W, H = 1140, 620
     svg = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">',
            f'<rect width="{W}" height="{H}" fill="{BG}"/>']
     bh = 58
@@ -138,15 +158,34 @@ def build_one(paths, lang, suf):
             arrow(460, y2 + bh / 2, 520, y2 + bh / 2, "REST"),
             arrow(710, y2 + bh / 2, 800, y2 + bh / 2, T["secrets"])]
 
-    svg.append(band(30, 340, W - 60, 220, T["b3t"], T["b3s"]))
-    svg += [box(paths, 120, 410, 220, bh, "googlecloud", "Cloud Monitoring", T["mon_sub"]),
-            box(paths, 470, 410, 230, bh, "googlecloud", "Compute Engine API", "setMachineType"),
-            box(paths, 760, 410, 320, 70, None, T["fleet"], T["fleet_sub"])]
-    be = 520 + 95
-    svg += [arrow(be, y2 + bh, 230, 410, T["read"]),
-            arrow(be + 40, y2 + bh, 585, 410, T["resize"]),
-            arrow(585, 468, 760, 455, T["scs"]),
-            arrow(760, 460, 340, 455, T["push"], lx=560, ly=520)]
+    svg.append(band(30, 340, W - 60, 240, T["b3t"], T["b3s"]))
+    # Clean orthogonal control loop (no crossings): backend reads Monitoring and
+    # resizes via Compute Engine; Compute Engine drives the fleet; the fleet pushes
+    # metrics back to Monitoring along a separate bottom rail.
+    mon_x, mon_y, mon_w, mon_h = 80, 418, 210, 56
+    ce_x, ce_y, ce_w, ce_h = 470, 418, 230, 56
+    fl_x, fl_y, fl_w, fl_h = 820, 418, 270, 68
+    svg += [box(paths, mon_x, mon_y, mon_w, mon_h, "googlecloud", "Cloud Monitoring", T["mon_sub"]),
+            box(paths, ce_x, ce_y, ce_w, ce_h, "googlecloud", "Compute Engine API", "setMachineType"),
+            box(paths, fl_x, fl_y, fl_w, fl_h, None, T["fleet"], T["fleet_sub"])]
+    be_b = y2 + bh        # backend box bottom
+    mon_cx = mon_x + mon_w / 2     # 185
+    ce_cx = ce_x + ce_w / 2        # 585
+    read_y, push_y = 402, 540
+    svg += [
+        # backend -> Compute Engine API (resize), straight down
+        parrow([(615, be_b), (615, ce_y - 4)], T["resize"], lx=625, ly=352, anchor="start"),
+        # backend -> Cloud Monitoring (read), elbow down-left into box top
+        parrow([(560, be_b), (560, read_y), (mon_cx, read_y), (mon_cx, mon_y - 4)],
+               T["read"], lx=378, ly=read_y - 6),
+        # Compute Engine API -> fleet (stop/change/start), straight right
+        parrow([(ce_x + ce_w, ce_y + ce_h / 2), (fl_x - 4, ce_y + ce_h / 2)],
+               T["scs"], lx=(ce_x + ce_w + fl_x) / 2, ly=ce_y + ce_h / 2 - 8),
+        # fleet -> Cloud Monitoring (Ops Agent push), bottom rail up into box bottom
+        parrow([(fl_x + fl_w / 2, fl_y + fl_h), (fl_x + fl_w / 2, push_y),
+                (mon_cx, push_y), (mon_cx, mon_y + mon_h + 4)],
+               T["push"], lx=575, ly=push_y - 6),
+    ]
     svg.append(text(W / 2, H - 16, T["cap"], 12, INK, "normal", "middle"))
     svg.append("</svg>")
     txt = "".join(svg)
