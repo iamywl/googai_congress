@@ -1,0 +1,80 @@
+{
+  "interactive_web": {
+    "mae_model": 2.691,
+    "rmse_model": 4.024,
+    "mape_model": 20.03,
+    "rmse_naive": 4.147,
+    "rmse_snaive": 4.996,
+    "smape": 17.58,
+    "mase": 0.954,
+    "coverage": 0.983,
+    "mpiw": 17.003,
+    "dm_stat": -2.061,
+    "dm_p": 0.0393
+  },
+  "interactive_api": {
+    "mae_model": 2.444,
+    "rmse_model": 3.991,
+    "mape_model": 10.86,
+    "rmse_naive": 5.617,
+    "rmse_snaive": 5.747,
+    "smape": 10.15,
+    "mase": 0.717,
+    "coverage": 0.955,
+    "mpiw": 16.246,
+    "dm_stat": -3.696,
+    "dm_p": 0.0002
+  },
+  "steady_cache": {
+    "mae_model": 1.768,
+    "rmse_model": 3.136,
+    "mape_model": 14.89,
+    "rmse_naive": 3.223,
+    "rmse_snaive": 3.814,
+    "smape": 13.64,
+    "mase": 0.995,
+    "coverage": 0.983,
+    "mpiw": 13.657,
+    "dm_stat": -1.255,
+    "dm_p": 0.2094
+  },
+  "batch_etl": {
+    "mae_model": 2.849,
+    "rmse_model": 4.372,
+    "mape_model": 13.86,
+    "rmse_naive": 32.384,
+    "rmse_snaive": 5.91,
+    "smape": 13.99,
+    "mase": 0.869,
+    "coverage": 0.927,
+    "mpiw": 17.132,
+    "dm_stat": -3.633,
+    "dm_p": 0.0003
+  },
+  "service_lowutil": {
+    "mae_model": 0.981,
+    "rmse_model": 1.828,
+    "mape_model": 11.47,
+    "rmse_naive": 2.444,
+    "rmse_snaive": 2.846,
+    "smape": 11.77,
+    "mase": 0.57,
+    "coverage": 0.976,
+    "mpiw": 6.349,
+    "dm_stat": -2.217,
+    "dm_p": 0.0266
+  },
+  "devtest": {
+    "mae_model": 2.814,
+    "rmse_model": 3.99,
+    "mape_model": 32.62,
+    "rmse_naive": 2.746,
+    "rmse_snaive": 4.27,
+    "smape": 27.79,
+    "mase": 1.175,
+    "coverage": 0.969,
+    "mpiw": 17.67,
+    "dm_stat": -0.796,
+    "dm_p": 0.426
+  }
+}
