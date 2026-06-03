@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Generate the MetricLens system-architecture diagram from official OSS logos.
+"""Generate the MetricLens system-architecture figure (publication style).
 
 Fetches each technology's official brand icon from Simple Icons (CC0-licensed
-SVG paths), composes a dark-themed layered architecture diagram as an SVG, and
-rasterises it to PNG (for the .docx report) with cairosvg.
+SVG paths) and composes a clean, paper-figure-style layered block diagram on a
+white background — labelled functional blocks, thin borders, and annotated
+data-flow arrows — then rasterises it to PNG with cairosvg for the .docx report.
 
 Usage:
     python scripts/build_architecture_diagram.py
@@ -25,34 +26,35 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "docs" / "diagrams"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# (slug, label, brand colour) — slug is the Simple Icons identifier.
+# Palette — restrained, academic.
+BG = "#ffffff"
+BAND_FILL = "#f5f7f9"
+BAND_BORDER = "#d0d7de"
+BOX_FILL = "#ffffff"
+BOX_BORDER = "#c2c9d1"
+INK = "#1f2328"        # primary text
+SUB = "#57606a"        # secondary text / arrows
+
+# Each block: (slug, brand colour, name, role).
 PRESENTATION = [
-    ("react", "React 19", "#61DAFB"),
-    ("vite", "Vite", "#646CFF"),
-    ("apacheecharts", "ECharts", "#AA344D"),
-    ("nginx", "nginx", "#009639"),
+    ("react", "#149ECA", "React 19 SPA", "Vite · ECharts (Canvas)"),
+    ("nginx", "#009639", "nginx", "non-root static serving"),
 ]
 BUSINESS = [
-    ("fastapi", "FastAPI", "#009688"),
-    ("python", "Python", "#3776AB"),
-    ("pydantic", "Pydantic", "#E92063"),
-    ("sqlalchemy", "SQLAlchemy", "#D71F00"),
+    ("fastapi", "#009688", "FastAPI", "Controller · Service · Repository"),
+    ("python", "#3776AB", "Pure Core", "forecaster · optimizer"),
+    ("sqlalchemy", "#D71F00", "SQLAlchemy 2.0", "async ORM"),
 ]
 DATA = [
-    ("postgresql", "PostgreSQL\n(prod / Cloud SQL)", "#4169E1"),
-    ("sqlite", "SQLite\n(demo)", "#003B57"),
+    ("postgresql", "#4169E1", "PostgreSQL", "production (Cloud SQL)"),
+    ("sqlite", "#003B57", "SQLite", "embedded demo (auto-seed)"),
 ]
 PLATFORM = [
-    ("googlecloud", "Cloud Run", "#4285F4"),
-    ("googlecloud", "Cloud Build (CI/CD)", "#4285F4"),
-    ("googlecloud", "Artifact Registry", "#4285F4"),
-    ("googlecloud", "Secret Manager", "#4285F4"),
-    ("docker", "Docker", "#2496ED"),
+    ("googlecloud", "#4285F4", "Cloud Run / Build", "Artifact Registry · Secret Mgr"),
+    ("docker", "#2496ED", "Docker", "non-root container images"),
 ]
 
 _PATH_RE = re.compile(r'<path[^>]*\sd="([^"]+)"')
-
-
 _UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36"
 _SOURCES = (
     "https://cdn.jsdelivr.net/npm/simple-icons@13/icons/{slug}.svg",
@@ -61,11 +63,9 @@ _SOURCES = (
 
 
 def fetch_path(slug: str) -> str | None:
-    """Return the single SVG path 'd' for a Simple Icons slug, or None."""
     for tmpl in _SOURCES:
-        url = tmpl.format(slug=slug)
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": _UA})
+            req = urllib.request.Request(tmpl.format(slug=slug), headers={"User-Agent": _UA})
             with urllib.request.urlopen(req, timeout=20) as resp:
                 svg = resp.read().decode("utf-8")
         except Exception:  # noqa: BLE001 - try next source
@@ -77,98 +77,93 @@ def fetch_path(slug: str) -> str | None:
     return None
 
 
-def icon(paths: dict, slug: str, color: str, x: float, y: float, size: float) -> str:
-    """A white rounded chip with the brand-coloured logo centred inside."""
-    chip = (
-        f'<rect x="{x}" y="{y}" width="{size}" height="{size}" rx="10" '
-        f'fill="#ffffff" stroke="#30363d"/>'
-    )
-    d = paths.get(slug)
-    if not d:
-        return chip
-    pad = size * 0.22
-    scale = (size - 2 * pad) / 24.0
+def _text(x, y, s, size, fill, weight="normal", anchor="start"):
     return (
-        chip
-        + f'<g transform="translate({x + pad},{y + pad}) scale({scale})">'
-        + f'<path d="{d}" fill="{color}"/></g>'
+        f'<text x="{x}" y="{y}" font-size="{size}" fill="{fill}" '
+        f'font-weight="{weight}" text-anchor="{anchor}" '
+        f'font-family="Helvetica, Arial, sans-serif">{escape(s)}</text>'
     )
 
 
-def card(paths, slug, label, color, cx, top, size=46) -> str:
-    """A logo chip with a (possibly multi-line) label centred under it."""
-    x = cx - size / 2
-    parts = [icon(paths, slug, color, x, top, size)]
-    lines = label.split("\n")
-    for i, line in enumerate(lines):
-        fs = 12 if i == 0 else 10
-        fill = "#c9d1d9" if i == 0 else "#8b949e"
-        ty = top + size + 16 + i * 13
-        parts.append(
-            f'<text x="{cx}" y="{ty}" text-anchor="middle" '
-            f'font-size="{fs}" fill="{fill}" '
-            f'font-family="Segoe UI, system-ui, sans-serif">{escape(line)}</text>'
-        )
-    return "".join(parts)
-
-
-def band(paths, title, subtitle, items, y, height, width, color="#4f9cff") -> str:
-    """A tier band: titled rounded rect with evenly-spaced logo cards."""
+def block(paths, slug, color, name, role, x, y, w, h) -> str:
+    """A white component box: brand logo on the left, name + role text."""
     parts = [
-        f'<rect x="40" y="{y}" width="{width - 80}" height="{height}" rx="14" '
-        f'fill="#161b22" stroke="{color}" stroke-opacity="0.5"/>',
-        f'<text x="60" y="{y + 26}" font-size="14" font-weight="700" fill="{color}" '
-        f'font-family="Segoe UI, system-ui, sans-serif">{escape(title)}</text>',
-        f'<text x="60" y="{y + 44}" font-size="11" fill="#8b949e" '
-        f'font-family="Segoe UI, system-ui, sans-serif">{escape(subtitle)}</text>',
+        f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="8" '
+        f'fill="{BOX_FILL}" stroke="{BOX_BORDER}"/>'
     ]
-    n = len(items)
-    start = 150
-    span = width - 300
-    step = span / max(1, n - 1) if n > 1 else 0
-    card_top = y + height / 2 - 18
-    for i, (slug, label, c) in enumerate(items):
-        cx = start + (step * i if n > 1 else span / 2)
-        parts.append(card(paths, slug, label, c, cx, card_top))
+    d = paths.get(slug)
+    lx = x + 16
+    if d:
+        size = 28
+        ly = y + h / 2 - size / 2
+        scale = size / 24.0
+        parts.append(
+            f'<g transform="translate({lx},{ly}) scale({scale})">'
+            f'<path d="{d}" fill="{color}"/></g>'
+        )
+    tx = lx + 40
+    parts.append(_text(tx, y + h / 2 - 4, name, 14, INK, "bold"))
+    parts.append(_text(tx, y + h / 2 + 15, role, 11, SUB))
     return "".join(parts)
 
 
-def arrow(x, y1, y2) -> str:
+def band(paths, label, sub, items, y, W, h=104, bw=196) -> str:
+    parts = [
+        f'<rect x="40" y="{y}" width="{W - 80}" height="{h}" rx="10" '
+        f'fill="{BAND_FILL}" stroke="{BAND_BORDER}"/>',
+        _text(60, y + h / 2 - 3, label, 14, INK, "bold"),
+        _text(60, y + h / 2 + 15, sub, 10, SUB),
+    ]
+    left_col = 230
+    area = (W - 56) - left_col
+    gap, bh = 26, 64
+    n = len(items)
+    total = n * bw + (n - 1) * gap
+    startx = left_col + (area - total) / 2
+    by = y + h / 2 - bh / 2
+    for i, (slug, color, name, role) in enumerate(items):
+        parts.append(block(paths, slug, color, name, role,
+                            startx + i * (bw + gap), by, bw, bh))
+    return "".join(parts)
+
+
+def arrow(x, y1, y2, label) -> str:
     return (
-        f'<line x1="{x}" y1="{y1}" x2="{x}" y2="{y2 - 8}" stroke="#4f9cff" '
-        f'stroke-width="2"/>'
-        f'<path d="M{x - 5},{y2 - 8} L{x + 5},{y2 - 8} L{x},{y2} Z" fill="#4f9cff"/>'
+        f'<line x1="{x}" y1="{y1}" x2="{x}" y2="{y2 - 9}" stroke="{SUB}" stroke-width="1.5"/>'
+        f'<path d="M{x - 5},{y2 - 9} L{x + 5},{y2 - 9} L{x},{y2} Z" fill="{SUB}"/>'
+        + _text(x + 14, (y1 + y2) / 2 + 4, label, 11, SUB)
     )
 
 
 def build() -> None:
-    slugs = {s for grp in (PRESENTATION, BUSINESS, DATA, PLATFORM) for s, _, _ in grp}
+    slugs = {s for grp in (PRESENTATION, BUSINESS, DATA, PLATFORM) for s, *_ in grp}
     print("Fetching official OSS logos…")
     paths = {s: fetch_path(s) for s in slugs}
-    ok = sum(v is not None for v in paths.values())
-    print(f"  {ok}/{len(slugs)} logos fetched")
+    print(f"  {sum(v is not None for v in paths.values())}/{len(slugs)} fetched")
 
-    W, H = 1000, 760
+    W, H = 1000, 720
     cx = W / 2
     svg = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" '
         f'viewBox="0 0 {W} {H}">',
-        f'<rect width="{W}" height="{H}" fill="#0d1117"/>',
-        f'<text x="{cx}" y="44" text-anchor="middle" font-size="22" '
-        f'font-weight="700" fill="#f0f6fc" '
-        f'font-family="Segoe UI, system-ui, sans-serif">'
-        f'MetricLens AI — System Architecture</text>',
+        f'<rect width="{W}" height="{H}" fill="{BG}"/>',
     ]
-    svg.append(band(paths, "Presentation Tier", "Browser SPA → nginx (non-root) on Cloud Run",
-                    PRESENTATION, 70, 130, W))
-    svg.append(arrow(cx, 200, 230))
-    svg.append(band(paths, "Business Tier", "Layered API: Controller → Service → Repository + pure Core (forecaster · optimizer)",
-                    BUSINESS, 230, 130, W))
-    svg.append(arrow(cx, 360, 390))
-    svg.append(band(paths, "Data Tier", "SQLAlchemy 2.0 async — managed Postgres in prod, embedded SQLite for the demo",
-                    DATA, 390, 130, W))
-    svg.append(band(paths, "Platform & CI/CD", "GCP-native: Cloud Build pipeline → Artifact Registry → Cloud Run; secrets via Secret Manager",
-                    PLATFORM, 540, 150, W, color="#3fb950"))
+    y = 36
+    svg.append(band(paths, "Presentation", "browser SPA on Cloud Run", PRESENTATION, y, W))
+    svg.append(arrow(cx, y + 104, y + 150, "REST / HTTPS (CORS)"))
+    y += 150
+    svg.append(band(paths, "Business", "layered FastAPI + dependency-free Core", BUSINESS, y, W))
+    svg.append(arrow(cx, y + 104, y + 150, "SQLAlchemy 2.0 async"))
+    y += 150
+    svg.append(band(paths, "Data", "managed Postgres (prod) · embedded SQLite (demo)", DATA, y, W))
+    y += 150
+    svg.append(arrow(cx, y + 46, y + 6, "build & deploy"))
+    svg.append(band(paths, "Platform & CI/CD", "GCP-native, scale-to-zero", PLATFORM, y + 46, W, bw=232))
+
+    # Figure caption (paper style).
+    svg.append(_text(cx, H - 18,
+                     "Figure 1: MetricLens AI — layered system architecture "
+                     "(GCP-native, Cloud Run).", 12, INK, "normal", "middle"))
     svg.append("</svg>")
     svg_text = "".join(svg)
 
@@ -176,8 +171,7 @@ def build() -> None:
     cairosvg.svg2png(
         bytestring=svg_text.encode("utf-8"),
         write_to=str(OUT_DIR / "architecture.png"),
-        output_width=W * 2,  # 2× for a crisp raster in the report
-        output_height=H * 2,
+        output_width=W * 2, output_height=H * 2,
     )
     print(f"Wrote {OUT_DIR/'architecture.svg'} and architecture.png")
 
