@@ -47,7 +47,7 @@
   font-weight: 600;
   text-decoration: none;
   color: var(--accent);
-  background: rgba(79, 156, 255, 0.12);
+  background: rgba(50, 116, 217, 0.12);
   border: 1px solid var(--accent);
   border-radius: 8px;
   padding: 7px 13px;
@@ -55,7 +55,7 @@
 }
 
 .deck-link:hover {
-  background: rgba(79, 156, 255, 0.22);
+  background: rgba(50, 116, 217, 0.22);
 }
 
 .badge {
@@ -80,13 +80,14 @@
 }
 
 .kpi-card {
-  background: linear-gradient(160deg, var(--panel-2), var(--panel));
+  background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 6px;
   padding: 16px 18px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
 }
 
 .kpi-label {
@@ -102,7 +103,7 @@
 
 .kpi-value strong {
   font-size: 28px;
-  color: #f0f6fc;
+  color: #11151a;
 }
 
 .kpi-value em {
@@ -175,7 +176,7 @@
 }
 
 .env-dev {
-  background: rgba(79, 156, 255, 0.15);
+  background: rgba(50, 116, 217, 0.15);
   color: var(--accent);
 }
 
@@ -189,8 +190,9 @@
 .panel {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 6px;
   padding: 18px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
 }
 
 .chart-panel {
@@ -256,7 +258,7 @@
 .rec-value .to {
   font-size: 26px;
   font-weight: 700;
-  color: #f0f6fc;
+  color: #11151a;
 }
 
 .rec-note {
@@ -287,7 +289,7 @@
 .resize-display .to {
   font-size: 34px;
   font-weight: 800;
-  color: #f0f6fc;
+  color: #11151a;
   transition: color 0.2s;
 }
 
@@ -336,7 +338,7 @@
 .btn.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #04121f;
+  color: #ffffff;
 }
 
 .btn.ghost {
@@ -347,7 +349,7 @@
 .btn.wide {
   width: 100%;
   margin-top: 10px;
-  background: rgba(79, 156, 255, 0.12);
+  background: rgba(50, 116, 217, 0.12);
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -386,7 +388,7 @@
 }
 
 .log-item.forecast .log-tag {
-  background: rgba(79, 156, 255, 0.15);
+  background: rgba(50, 116, 217, 0.15);
   color: var(--accent);
 }
 
@@ -466,7 +468,7 @@
 .infotip:focus .infotip-icon {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(79, 156, 255, 0.12);
+  background: rgba(50, 116, 217, 0.12);
 }
 
 .infotip-bubble {
@@ -477,16 +479,16 @@
   width: max-content;
   max-width: 260px;
   padding: 9px 11px;
-  background: #0b1220;
-  border: 1px solid var(--accent);
+  background: #1b1f24;
+  border: 1px solid #1b1f24;
   border-radius: 8px;
-  color: var(--text);
+  color: #f3f4f6;
   font-size: 12px;
   font-weight: 400;
   line-height: 1.5;
   text-align: left;
   white-space: normal;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.18);
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.15s, transform 0.15s;
@@ -501,7 +503,7 @@
   left: 50%;
   transform: translateX(-50%);
   border: 6px solid transparent;
-  border-top-color: var(--accent);
+  border-top-color: #1b1f24;
 }
 
 .infotip:hover .infotip-bubble,
@@ -534,7 +536,7 @@
   font-size: 11px;
   font-family: 'SFMono-Regular', Consolas, monospace;
   color: var(--accent);
-  background: rgba(79, 156, 255, 0.1);
+  background: rgba(50, 116, 217, 0.1);
   border-radius: 5px;
   padding: 1px 6px;
   margin-top: 2px;
@@ -544,8 +546,8 @@
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 12px;
   color: var(--accent);
-  background: rgba(79, 156, 255, 0.1);
-  border: 1px solid rgba(79, 156, 255, 0.25);
+  background: rgba(50, 116, 217, 0.1);
+  border: 1px solid rgba(50, 116, 217, 0.25);
   border-radius: 5px;
   padding: 2px 7px;
 }
@@ -687,7 +689,7 @@
 .chip-btn.active {
   color: var(--accent);
   border-color: var(--accent);
-  background: rgba(79, 156, 255, 0.12);
+  background: rgba(50, 116, 217, 0.12);
 }
 
 .history-stats {
@@ -704,7 +706,7 @@
 }
 
 .history-stats strong {
-  color: #f0f6fc;
+  color: #11151a;
   font-weight: 600;
 }
 

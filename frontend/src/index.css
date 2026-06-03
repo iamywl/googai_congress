@@ -1,15 +1,21 @@
 :root {
-  --bg: #0d1117;
-  --panel: #161b22;
-  --panel-2: #1c2330;
-  --border: #2a3140;
-  --text: #c9d1d9;
-  --text-dim: #8b949e;
-  --accent: #4f9cff;
-  --good: #3fb950;
-  --warn: #d29922;
-  font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
-  color-scheme: dark;
+  /* Light, Grafana-inspired, paper-clean palette: white panels on a light-gray
+     page, near-black text, restrained accent; colour lives in the charts. */
+  --bg: #f4f5f7;
+  --panel: #ffffff;
+  --panel-2: #f5f6f8;
+  --border: #e2e5e9;
+  --border-strong: #d4d8de;
+  --text: #1b1f24;
+  --text-dim: #5b636d;
+  --accent: #3274d9;
+  --accent-soft: rgba(50, 116, 217, 0.1);
+  --good: #1a9850;
+  --warn: #c07d0a;
+  --bad: #d23b3b;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, Roboto, 'Malgun Gothic', sans-serif;
+  color-scheme: light;
+  -webkit-font-smoothing: antialiased;
 }
 
 * {
@@ -29,8 +35,8 @@ h1,
 h2,
 h3 {
   margin: 0;
-  color: #f0f6fc;
-  font-weight: 600;
+  color: #11151a;
+  font-weight: 650;
 }
 
 p {
