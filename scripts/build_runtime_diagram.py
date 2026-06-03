@@ -58,7 +58,7 @@ def fetch(slug: str) -> str | None:
 def text(x, y, s, size, fill, weight="normal", anchor="start"):
     return (f'<text x="{x}" y="{y}" font-size="{size}" fill="{fill}" '
             f'font-weight="{weight}" text-anchor="{anchor}" '
-            f'font-family="Helvetica, Arial, sans-serif">{escape(s)}</text>')
+            f'font-family="NanumGothic, Helvetica, Arial, sans-serif">{escape(s)}</text>')
 
 
 def box(paths, x, y, w, h, slug, title, sub, color=G):
@@ -114,48 +114,48 @@ def build():
 
     bw, bh = 188, 58
     # ---- Band 1: CI/CD ----
-    svg.append(band(30, 40, W - 60, 110, "CI/CD pipeline (Cloud Build to Cloud Run)",
-                    "git push -> lint -> test -> build image -> deploy -> health check"))
+    svg.append(band(30, 40, W - 60, 110, "CI/CD 파이프라인 (Cloud Build → Cloud Run)",
+                    "git push → 린트 → 테스트 → 이미지 빌드 → 배포 → 헬스 체크"))
     y1 = 78
-    b_dev, r_dev = box(paths, 50, y1, 150, bh, "git", "Developer", "git push")
-    b_cb, r_cb = box(paths, 270, y1, 230, bh, "googlecloud", "Cloud Build", "lint·test·build·deploy")
-    b_ar, r_ar = box(paths, 560, y1, 180, bh, "googlecloud", "Artifact Registry", "container images")
+    b_dev, r_dev = box(paths, 50, y1, 150, bh, "git", "개발자(Developer)", "git push")
+    b_cb, r_cb = box(paths, 270, y1, 230, bh, "googlecloud", "Cloud Build", "린트·테스트·빌드·배포")
+    b_ar, r_ar = box(paths, 560, y1, 180, bh, "googlecloud", "Artifact Registry", "컨테이너 이미지")
     b_cr, r_cr = box(paths, 800, y1, 190, bh, "googlecloud", "Cloud Run", "scale-to-zero")
     svg += [b_dev, b_cb, b_ar, b_cr]
-    svg.append(arrow(200, y1 + bh / 2, 270, y1 + bh / 2, "trigger"))
-    svg.append(arrow(500, y1 + bh / 2, 560, y1 + bh / 2, "image"))
-    svg.append(arrow(740, y1 + bh / 2, 800, y1 + bh / 2, "deploy"))
+    svg.append(arrow(200, y1 + bh / 2, 270, y1 + bh / 2, "트리거"))
+    svg.append(arrow(500, y1 + bh / 2, 560, y1 + bh / 2, "이미지"))
+    svg.append(arrow(740, y1 + bh / 2, 800, y1 + bh / 2, "배포"))
 
     # ---- Band 2: Runtime serving ----
-    svg.append(band(30, 190, W - 60, 110, "Runtime serving (serverless)",
-                    "browser -> frontend -> backend; secrets from Secret Manager"))
+    svg.append(band(30, 190, W - 60, 110, "런타임 서빙 (서버리스)",
+                    "브라우저 → 프론트엔드 → 백엔드, 비밀값은 Secret Manager"))
     y2 = 228
-    b_br, _ = box(paths, 50, y2, 150, bh, None, "Browser", "React SPA")
-    b_fe, _ = box(paths, 270, y2, 190, bh, "googlecloud", "Frontend", "Cloud Run · nginx")
-    b_be, r_be = box(paths, 520, y2, 190, bh, "googlecloud", "Backend", "FastAPI · Cloud Run")
-    b_sm, _ = box(paths, 800, y2, 190, bh, "googlecloud", "Secret Manager", "DB DSN / secrets")
+    b_br, _ = box(paths, 50, y2, 150, bh, None, "브라우저(Browser)", "React SPA")
+    b_fe, _ = box(paths, 270, y2, 190, bh, "googlecloud", "프론트엔드", "Cloud Run · nginx")
+    b_be, r_be = box(paths, 520, y2, 190, bh, "googlecloud", "백엔드", "FastAPI · Cloud Run")
+    b_sm, _ = box(paths, 800, y2, 190, bh, "googlecloud", "Secret Manager", "DB DSN / 비밀값")
     svg += [b_br, b_fe, b_be, b_sm]
     svg.append(arrow(200, y2 + bh / 2, 270, y2 + bh / 2, "HTTPS"))
     svg.append(arrow(460, y2 + bh / 2, 520, y2 + bh / 2, "REST"))
-    svg.append(arrow(710, y2 + bh / 2, 800, y2 + bh / 2, "secrets"))
+    svg.append(arrow(710, y2 + bh / 2, 800, y2 + bh / 2, "비밀값"))
 
     # ---- Band 3: real fleet monitoring + resize ----
-    svg.append(band(30, 340, W - 60, 220, "Real-fleet monitoring & resize (Cloud Monitoring + Compute Engine)",
-                    "backend reads live CPU/memory and resizes real VMs within the budget guard"))
-    b_mon, _ = box(paths, 120, 410, 220, bh, "googlecloud", "Cloud Monitoring", "CPU + memory")
+    svg.append(band(30, 340, W - 60, 220, "실제 플릿 모니터링 · 리사이즈 (Cloud Monitoring + Compute Engine)",
+                    "백엔드가 실측 CPU/메모리를 읽고, 예산 한도 내에서 실제 VM을 리사이즈"))
+    b_mon, _ = box(paths, 120, 410, 220, bh, "googlecloud", "Cloud Monitoring", "CPU + 메모리")
     b_ce, _ = box(paths, 470, 410, 230, bh, "googlecloud", "Compute Engine API", "setMachineType")
-    b_fleet, _ = box(paths, 760, 410, 320, 70, None, "Real fleet · ml-web/api/batch/idle",
-                     "e2-small · load generator + Ops Agent")
+    b_fleet, _ = box(paths, 760, 410, 320, 70, None, "실제 플릿 · ml-web/api/batch/idle",
+                     "e2-small · 부하 생성기 + Ops Agent")
     svg += [b_mon, b_ce, b_fleet]
 
     be_cx, be_by = 520 + 95, y2 + bh  # backend bottom-center
-    svg.append(arrow(be_cx, be_by, 230, 410, "read CPU/mem"))
-    svg.append(arrow(be_cx + 40, be_by, 585, 410, "resize (budget-guarded)"))
+    svg.append(arrow(be_cx, be_by, 230, 410, "CPU/메모리 조회"))
+    svg.append(arrow(be_cx + 40, be_by, 585, 410, "리사이즈 (예산 가드)"))
     svg.append(arrow(585, 468, 760, 455, "stop→change→start"))
-    svg.append(arrow(760, 460, 340, 455, "push metrics (Ops Agent)", lx=560, ly=520))
+    svg.append(arrow(760, 460, 340, 455, "메트릭 전송 (Ops Agent)", lx=560, ly=520))
 
     svg.append(text(W / 2, H - 16,
-                    "Figure. MetricLens runtime & CI/CD operation (GCP-native serverless).",
+                    "그림. MetricLens 런타임 · CI/CD 구동 방식 (GCP 네이티브 서버리스).",
                     12, INK, "normal", "middle"))
     svg.append("</svg>")
     svg_text = "".join(svg)

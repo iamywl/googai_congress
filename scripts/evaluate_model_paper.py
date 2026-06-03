@@ -29,6 +29,14 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib import font_manager as _fm  # noqa: E402
+
+# Register the bundled Korean font so figure labels render Hangul.
+for _f in (Path.home() / ".local/share/fonts").glob("NanumGothic*.ttf"):
+    try:
+        _fm.fontManager.addfont(str(_f))
+    except Exception:  # noqa: BLE001
+        pass
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
 from app.core import evaluation, workload  # noqa: E402
@@ -40,12 +48,14 @@ OUT.mkdir(parents=True, exist_ok=True)
 # Consistent, clean publication style.
 plt.rcParams.update({
     "figure.dpi": 150,
+    "font.family": "NanumGothic",
     "font.size": 10,
     "axes.grid": True,
     "grid.alpha": 0.3,
     "axes.spines.top": False,
     "axes.spines.right": False,
     "figure.autolayout": True,
+    "axes.unicode_minus": False,
 })
 C_MODEL, C_NAIVE, C_SNAIVE = "#1f77b4", "#999999", "#d62728"
 
@@ -93,13 +103,13 @@ def fig_forecast_overlay(runs):
         _, run = runs[key]
         a, m, lo, hi = run.actual[-96:], run.model[-96:], run.lower[-96:], run.upper[-96:]
         x = range(len(a))
-        ax.fill_between(x, lo, hi, color=C_MODEL, alpha=0.18, label="95% interval")
-        ax.plot(x, a, color="#111", lw=1.4, label="actual")
-        ax.plot(x, m, color=C_MODEL, lw=1.4, ls="--", label="forecast")
-        ax.set_title(f"{key}: one-step forecast vs actual (last 96h)")
+        ax.fill_between(x, lo, hi, color=C_MODEL, alpha=0.18, label="95% 구간")
+        ax.plot(x, a, color="#111", lw=1.4, label="실측")
+        ax.plot(x, m, color=C_MODEL, lw=1.4, ls="--", label="예측")
+        ax.set_title(f"{key}: 1-스텝 예측 vs 실측 (최근 96h)")
         ax.set_ylabel("CPU %")
         ax.legend(loc="upper right", fontsize=8, framealpha=0.9)
-    axes[-1].set_xlabel("hour")
+    axes[-1].set_xlabel("시간 (h)")
     fig.savefig(OUT / "fig_forecast_overlay.png")
     plt.close(fig)
 
@@ -109,14 +119,14 @@ def fig_error_rmse(rows):
     x = range(len(keys))
     w = 0.27
     fig, ax = plt.subplots(figsize=(8, 4))
-    ax.bar([i - w for i in x], [rows[k]["rmse_model"] for k in keys], w, label="model", color=C_MODEL)
+    ax.bar([i - w for i in x], [rows[k]["rmse_model"] for k in keys], w, label="모델(model)", color=C_MODEL)
     ax.bar(list(x), [rows[k]["rmse_snaive"] for k in keys], w, label="seasonal-naive", color=C_SNAIVE)
     ax.bar([i + w for i in x], [rows[k]["rmse_naive"] for k in keys], w, label="naive", color=C_NAIVE)
     ax.set_xticks(list(x))
     ax.set_xticks(range(len(keys)))
     ax.set_xticklabels(keys, rotation=20, ha="right", fontsize=8)
     ax.set_ylabel("RMSE (CPU %)")
-    ax.set_title("Forecast error: model vs baselines (lower is better)")
+    ax.set_title("예측 오차(RMSE): 모델 vs 기준선 (낮을수록 우수)")
     ax.legend(fontsize=8)
     fig.savefig(OUT / "fig_error_rmse.png")
     plt.close(fig)
@@ -130,7 +140,7 @@ def fig_mase(rows):
     ax.bar(keys, vals, color=colors)
     ax.axhline(1.0, color=C_SNAIVE, ls="--", lw=1.2, label="seasonal-naive (MASE=1)")
     ax.set_ylabel("MASE")
-    ax.set_title("Mean Absolute Scaled Error (<1 beats seasonal-naive)")
+    ax.set_title("MASE — 1 미만이면 seasonal-naive 능가")
     ax.set_xticks(range(len(keys)))
     ax.set_xticklabels(keys, rotation=20, ha="right", fontsize=8)
     ax.legend(fontsize=8)
@@ -143,10 +153,10 @@ def fig_coverage(rows):
     vals = [rows[k]["coverage"] for k in keys]
     fig, ax = plt.subplots(figsize=(8, 4))
     ax.bar(keys, vals, color=C_MODEL)
-    ax.axhline(0.95, color=C_SNAIVE, ls="--", lw=1.2, label="nominal 95%")
+    ax.axhline(0.95, color=C_SNAIVE, ls="--", lw=1.2, label="공칭 95%")
     ax.set_ylim(0.8, 1.0)
-    ax.set_ylabel("empirical coverage (PICP)")
-    ax.set_title("95% prediction-interval calibration")
+    ax.set_ylabel("실측 커버리지 (PICP)")
+    ax.set_title("95% 예측구간 보정 (PICP)")
     ax.set_xticks(range(len(keys)))
     ax.set_xticklabels(keys, rotation=20, ha="right", fontsize=8)
     ax.legend(fontsize=8)
@@ -163,10 +173,10 @@ def fig_residual_acf(runs):
     fig, ax = plt.subplots(figsize=(8, 3.6))
     ax.bar(range(len(acf)), acf, width=0.5, color=C_MODEL)
     ax.axhline(ci, color=C_SNAIVE, ls="--", lw=1.0)
-    ax.axhline(-ci, color=C_SNAIVE, ls="--", lw=1.0, label="95% white-noise band")
-    ax.set_xlabel("lag (hours)")
-    ax.set_ylabel("residual ACF")
-    ax.set_title("Residual autocorrelation (interactive_api) — near white = good fit")
+    ax.axhline(-ci, color=C_SNAIVE, ls="--", lw=1.0, label="95% 백색잡음 대역")
+    ax.set_xlabel("시차 (시간)")
+    ax.set_ylabel("잔차 ACF")
+    ax.set_title("잔차 자기상관(ACF, interactive_api) — 백색잡음에 가까우면 적합 양호")
     ax.legend(fontsize=8)
     fig.savefig(OUT / "fig_residual_acf.png")
     plt.close(fig)

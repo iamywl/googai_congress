@@ -34,7 +34,7 @@ FORMULA_BG = "#eef4fb"
 
 
 def text(x, y, s, size, fill, weight="normal", anchor="start", mono=False):
-    fam = "Consolas, monospace" if mono else "Helvetica, Arial, sans-serif"
+    fam = "Consolas, monospace" if mono else "NanumGothic, Helvetica, Arial, sans-serif"
     return (f'<text x="{x}" y="{y}" font-size="{size}" fill="{fill}" '
             f'font-weight="{weight}" text-anchor="{anchor}" '
             f'font-family="{fam}">{escape(s)}</text>')
@@ -82,7 +82,7 @@ def forecast_sketch(x, y, w, h):
     return "".join([
         f'<rect x="{x-8}" y="{y-12}" width="{w+16}" height="{h+24}" rx="6" '
         f'fill="#fff" stroke="{BORDER}"/>',
-        text(x - 2, y - 16, "forecast + 95% interval", 8.5, SUB),
+        text(x - 2, y - 16, "예측(forecast) + 95% 구간(interval)", 8.5, SUB),
         f'<polygon points="{bandpts}" fill="{BAND}" fill-opacity="0.15"/>',
         f'<polyline points="{hist}" fill="none" stroke="#111" stroke-width="1.4"/>',
         f'<polyline points="{fc}" fill="none" stroke="{ACC}" stroke-width="1.4" stroke-dasharray="4 3"/>',
@@ -93,16 +93,16 @@ def build():
     W, H = 1280, 470
     svg = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">',
            f'<rect width="{W}" height="{H}" fill="{BG}"/>',
-           text(W / 2, 40, "MetricLens approach: forecasting to SLO-constrained "
-                "integer-programming rightsizing", 16, INK, "bold", "middle")]
+           text(W / 2, 40, "MetricLens 접근법: 예측에서 SLO 제약 "
+                "정수계획(integer programming) 리사이징까지", 16, INK, "bold", "middle")]
 
     cards = [
-        ("Metric history", ["CPU · memory · network", "time series (hourly)"]),
-        ("Decomposition + AR", ["trend + seasonal", "+ ρ·residual  → forecast"]),
-        ("Robust peak", ["p95 of forecast", "(ignores transient spikes)"]),
-        ("Integer program", ["smallest allocation", "s.t. headroom (exact)"]),
-        ("GCP machine type", ["snap to nearest", "E2/N2/C2/C3 instance"]),
-        ("Resize + audit", ["SLO preserved", "persisted to audit log"]),
+        ("메트릭 이력", ["CPU · 메모리 · 네트워크", "시계열 (시간단위)"]),
+        ("분해 + AR 보정", ["추세(trend) + 계절(seasonal)", "+ rho·잔차 → 예측(forecast)"]),
+        ("강건 피크 (p95)", ["예측의 p95 통계", "(단발 스파이크 무시)"]),
+        ("정수계획 최적화", ["최소 할당 탐색", "s.t. 헤드룸 (정확 해)"]),
+        ("GCP 머신 타입", ["가장 근접한", "E2/N2/C2/C3 인스턴스"]),
+        ("리사이즈 + 감사", ["SLO 보존", "감사 로그 영속 기록"]),
     ]
     n = len(cards)
     cw, ch, gap = 178, 96, 18
@@ -127,15 +127,15 @@ def build():
                f'fill="{FORMULA_BG}" stroke="{ACC}" stroke-opacity="0.5"/>')
     svg.append(text(fx + fw / 2, fy + 26, "peak_load × safety_margin  ≤  "
                     "target_utilisation × allocation", 13, INK, "bold", "middle", mono=True))
-    svg.append(text(fx + fw / 2, fy + 48, "minimise allocation by exact enumeration "
-                    "(the smallest feasible integer size)", 10, SUB, anchor="middle"))
+    svg.append(text(fx + fw / 2, fy + 48, "전수 열거(exact enumeration)로 최소 할당 탐색 "
+                    "— 실현 가능한 최소 정수 사양", 10, SUB, anchor="middle"))
     cx34 = x0 + 3 * (cw + gap) + cw / 2 - cw / 2
     svg.append(f'<line x1="{fx+fw/2}" y1="{fy}" x2="{x0+3*(cw+gap)+cw/2}" y2="{cy+ch}" '
                f'stroke="{ACC}" stroke-width="1" stroke-dasharray="3 3"/>')
     _ = cx34
 
-    svg.append(text(W / 2, H - 16, "Figure. The MetricLens method: a white-box, "
-                    "GPU-free pipeline from telemetry to SLO-aware rightsizing.",
+    svg.append(text(W / 2, H - 16, "그림. MetricLens 방법론 — 텔레메트리에서 SLO 인지 리사이징까지의 "
+                    "화이트박스(white-box)·GPU-프리 파이프라인.",
                     12, INK, "normal", "middle"))
     svg.append("</svg>")
     svg_text = "".join(svg)

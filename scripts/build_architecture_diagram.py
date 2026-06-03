@@ -38,20 +38,20 @@ SUB = "#57606a"        # secondary text / arrows
 # Each block: (slug, brand colour, name, role).
 PRESENTATION = [
     ("react", "#149ECA", "React 19 SPA", "Vite · ECharts (Canvas)"),
-    ("nginx", "#009639", "nginx", "non-root static serving"),
+    ("nginx", "#009639", "nginx", "비루트 정적 서빙"),
 ]
 BUSINESS = [
     ("fastapi", "#009688", "FastAPI", "Controller · Service · Repository"),
     ("python", "#3776AB", "Pure Core", "forecaster · optimizer"),
-    ("sqlalchemy", "#D71F00", "SQLAlchemy 2.0", "async ORM"),
+    ("sqlalchemy", "#D71F00", "SQLAlchemy 2.0", "비동기 ORM"),
 ]
 DATA = [
-    ("postgresql", "#4169E1", "PostgreSQL", "production (Cloud SQL)"),
-    ("sqlite", "#003B57", "SQLite", "embedded demo (auto-seed)"),
+    ("postgresql", "#4169E1", "PostgreSQL", "운영 (Cloud SQL)"),
+    ("sqlite", "#003B57", "SQLite", "내장 데모 (자동 시드)"),
 ]
 PLATFORM = [
     ("googlecloud", "#4285F4", "Cloud Run / Build", "Artifact Registry · Secret Mgr"),
-    ("docker", "#2496ED", "Docker", "non-root container images"),
+    ("docker", "#2496ED", "Docker", "비루트 컨테이너 이미지"),
 ]
 
 _PATH_RE = re.compile(r'<path[^>]*\sd="([^"]+)"')
@@ -81,7 +81,7 @@ def _text(x, y, s, size, fill, weight="normal", anchor="start"):
     return (
         f'<text x="{x}" y="{y}" font-size="{size}" fill="{fill}" '
         f'font-weight="{weight}" text-anchor="{anchor}" '
-        f'font-family="Helvetica, Arial, sans-serif">{escape(s)}</text>'
+        f'font-family="NanumGothic, Helvetica, Arial, sans-serif">{escape(s)}</text>'
     )
 
 
@@ -149,21 +149,21 @@ def build() -> None:
         f'<rect width="{W}" height="{H}" fill="{BG}"/>',
     ]
     y = 36
-    svg.append(band(paths, "Presentation", "browser SPA on Cloud Run", PRESENTATION, y, W))
+    svg.append(band(paths, "표현 계층 (Presentation)", "브라우저 SPA · Cloud Run", PRESENTATION, y, W))
     svg.append(arrow(cx, y + 104, y + 150, "REST / HTTPS (CORS)"))
     y += 150
-    svg.append(band(paths, "Business", "layered FastAPI + dependency-free Core", BUSINESS, y, W))
+    svg.append(band(paths, "업무 계층 (Business)", "레이어드 FastAPI + 의존성 없는 Core", BUSINESS, y, W))
     svg.append(arrow(cx, y + 104, y + 150, "SQLAlchemy 2.0 async"))
     y += 150
-    svg.append(band(paths, "Data", "managed Postgres (prod) · embedded SQLite (demo)", DATA, y, W))
+    svg.append(band(paths, "데이터 계층 (Data)", "운영 Postgres · 데모 SQLite", DATA, y, W))
     y += 150
-    svg.append(arrow(cx, y + 46, y + 6, "build & deploy"))
-    svg.append(band(paths, "Platform & CI/CD", "GCP-native, scale-to-zero", PLATFORM, y + 46, W, bw=232))
+    svg.append(arrow(cx, y + 46, y + 6, "빌드·배포"))
+    svg.append(band(paths, "플랫폼 · CI/CD", "GCP 네이티브, scale-to-zero", PLATFORM, y + 46, W, bw=232))
 
     # Figure caption (paper style).
     svg.append(_text(cx, H - 18,
-                     "Figure 1: MetricLens AI — layered system architecture "
-                     "(GCP-native, Cloud Run).", 12, INK, "normal", "middle"))
+                     "그림. MetricLens AI 레이어드 시스템 아키텍처 "
+                     "(GCP 네이티브, Cloud Run).", 12, INK, "normal", "middle"))
     svg.append("</svg>")
     svg_text = "".join(svg)
 
