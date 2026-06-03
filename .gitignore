@@ -1,0 +1,36 @@
+# =============================================================================
+# This Git repository is rooted at the HOME directory (/home/ywlee).
+# To avoid ever committing shell config, SSH keys, cloud credentials, or AI
+# tool state, we IGNORE EVERYTHING by default and then explicitly re-include
+# only the MetricLens project files below. Add new top-level project paths
+# with a matching "!/path" line.
+# =============================================================================
+/*
+
+# --- Tracked project files ---
+!/.gitignore
+!/.gcloudignore
+!/README.md
+!/cloudbuild.yaml
+!/usenix2022.docx
+!/backend/
+!/frontend/
+!/docs/
+!/scripts/
+!/MetricLens_AI/
+
+# --- Build artifacts / caches inside tracked directories ---
+**/__pycache__/
+*.pyc
+*.pyo
+*.db
+*.sqlite3
+backend/.venv/
+backend/.pytest_cache/
+backend/.ruff_cache/
+frontend/node_modules/
+frontend/dist/
+
+# --- OS / editor noise ---
+.DS_Store
+*.swp

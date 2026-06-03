@@ -1,0 +1,33 @@
+# Keep the Cloud Build source upload small and fast.
+.git/
+.gitignore
+
+# Python
+**/__pycache__/
+**/.venv/
+**/.pytest_cache/
+**/.ruff_cache/
+*.pyc
+
+# Node / build artifacts (images run `npm ci` + build inside the Docker stage)
+**/node_modules/
+**/dist/
+
+# Local caches and tooling
+.cache/
+.config/
+.vscode-server/
+.npm/
+.npm-global/
+.local/
+.aider*
+*.db
+
+# Stray ROOT-level files (anchored with / so nested copies are kept)
+/index.html
+/test.py
+/verify.js
+/auto_dev_pipeline.py
+/package.json
+/package-lock.json
+/node_modules/

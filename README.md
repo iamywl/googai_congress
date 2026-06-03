@@ -7,10 +7,23 @@ GPU 없이 범용 CPU만으로 부하를 예측하고, 정수 계획법으로 SL
 
 ## Live Endpoints
 
-> `scripts/deploy.sh deploy` 실행 후 발급되는 Cloud Run URL로 갱신.
+- 🖥️ **대시보드(프론트엔드)**: https://metriclens-frontend-f2ei3uwvfq-uc.a.run.app
+- 🔌 **API(백엔드)**: https://metriclens-backend-f2ei3uwvfq-uc.a.run.app — Swagger `/docs`
 
-- 대시보드(프론트엔드): _(배포 후 기입)_ — [frontend/README.md](frontend/README.md)
-- API(백엔드): _(배포 후 기입)_, Swagger `/docs` — [backend/README.md](backend/README.md)
+## 차별점 (Why MetricLens)
+
+기존 시장은 ⓐ K8s/클라우드 **SaaS 옵티마이저**(CAST AI·Sedai·StormForge — 텔레메트리
+외부 전송·쿠버네티스 종속), ⓑ **CSP 내장 추천기**(AWS Compute Optimizer·Azure Advisor —
+단일 클라우드·14일 윈도우·계절성 취약), ⓒ **온프레 모니터링**(SolarWinds·ManageEngine —
+임계치/선형회귀 *리포팅* 수준, SLO 최적화 부재)로 나뉜다. MetricLens는 그 사이의 공백을 노린다:
+
+- 🔒 **에어갭/온프레 자립형** — 외부 API·SaaS 콜백 0, 단일 컨테이너+내장 DB. 망분리(국방·금융·공공) 즉시 투입.
+- 🪶 **GPU-프리 경량** — 표준 라이브러리 STL 예측기, 엣지 CPU 구동.
+- 🎯 **처방적 정수계획 최적화** — "저활용 알림"이 아니라 SLO 제약 하 **최소 자원 정확해**.
+- 🔍 **화이트박스 설명가능성** — MAPE·신뢰구간·헤드룸 수식으로 근거 투명(규제 감사 적합).
+- 🧾 **감사 추적** — 모든 예측·리사이즈를 영속 기록.
+
+상세 경쟁 분석: [docs/08_competitive_analysis.md](docs/08_competitive_analysis.md)
 
 ## 구성
 
@@ -43,6 +56,7 @@ PROJECT_ID=knudc-yoonwoodev \
 ```
 
 자세한 설계·테스트·스크린샷은 [개발 완료 보고서](docs/development_report.md) 참조.
-# googai_congress
-# googai_congress
-# googai_congress
+
+---
+
+**Team 구글링 — googai_congress**

@@ -1,0 +1,8 @@
+runtime: python312
+service: frontend-service
+handlers:
+  - url: /static
+    static_dir: dist/assets
+  - url: /(.*)
+    static_files: dist/index.html
+    upload: dist/index.html

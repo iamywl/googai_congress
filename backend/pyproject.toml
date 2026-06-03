@@ -1,0 +1,28 @@
+[project]
+name = "metriclens-backend"
+version = "1.0.0"
+description = "MetricLens AI — time-series load forecasting & resizing API"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["."]
+
+[tool.ruff.lint]
+# pycodestyle, pyflakes, isort, bugbear, comprehensions, pyupgrade, naming.
+select = ["E", "F", "I", "B", "C4", "UP", "N"]
+ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["N802"]  # test_* names are conventional
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI declares dependencies/params as call-valued defaults by design.
+extend-immutable-calls = ["fastapi.Query", "fastapi.Depends", "fastapi.Path"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+addopts = "-q"
