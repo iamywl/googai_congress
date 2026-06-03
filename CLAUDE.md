@@ -62,8 +62,8 @@
 ## 8. Git / 협업
 - `git config --global user.name "iamywl"`.
 - 리모트: `git@github.com:iamywl/googai_congress.git` (**SSH** 인증, 브랜치 `main`).
-- 저장소 루트가 홈 디렉토리이므로 **화이트리스트 `.gitignore`**로 프로젝트 파일만 추적한다
-  (`.ssh`/`.bash_history`/`.claude.json`/credential 등은 절대 커밋 금지).
+- 프로젝트는 **전용 디렉토리 `~/metriclens/`** 에 위치(저장소 루트 = 이 디렉토리).
+  일반 `.gitignore`로 빌드 산출물(`.venv`/`node_modules`/`dist`/캐시)만 제외한다.
 - 커밋·푸시는 사용자가 요청할 때 수행한다.
 
 ## 9. 빠른 검증 명령
