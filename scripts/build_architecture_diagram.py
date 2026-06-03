@@ -18,8 +18,9 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "docs" / "diagrams"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-BG, BAND_FILL, BAND_BORDER = "#ffffff", "#f5f7f9", "#d0d7de"
-BOX_FILL, BOX_BORDER, INK, SUB = "#ffffff", "#c2c9d1", "#1f2328", "#57606a"
+# Paper style: white fills, thin near-black lines.
+BG, BAND_FILL, BAND_BORDER = "#ffffff", "#ffffff", "#16191d"
+BOX_FILL, BOX_BORDER, INK, SUB = "#ffffff", "#16191d", "#16191d", "#454b52"
 FONT = "NanumGothic, Helvetica, Arial, sans-serif"
 
 # Component blocks: (slug, colour, name, role_en, role_kr). Names stay English.
@@ -36,9 +37,15 @@ DATA = [
     ("postgresql", "#4169E1", "PostgreSQL", "production (Cloud SQL)", "운영 (Cloud SQL)"),
     ("sqlite", "#003B57", "SQLite", "embedded demo (auto-seed)", "내장 데모 (자동 시드)"),
 ]
-PLATFORM = [
-    ("googlecloud", "#4285F4", "Cloud Run / Build", "Artifact Registry · Secret Mgr", "Artifact Registry · Secret Mgr"),
-    ("docker", "#2496ED", "Docker", "non-root container images", "비루트 컨테이너 이미지"),
+# Cross-cutting infrastructure — kept SEPARATE from the 3 logical layers and split
+# into runtime platform vs. CI/CD so the build pipeline is not shown as a 4th layer.
+RUNTIME = [
+    ("googlecloud", "#4285F4", "Cloud Run", "serverless · scale-to-zero", "서버리스 · scale-to-zero"),
+    ("docker", "#2496ED", "Docker", "non-root images", "비루트 컨테이너 이미지"),
+]
+CICD = [
+    ("git", "#F05032", "git push", "GitHub · main branch", "GitHub · main 브랜치"),
+    ("googlecloud", "#4285F4", "Cloud Build", "lint·test·build → deploy", "린트·테스트·빌드 → 배포"),
 ]
 
 TR = {
@@ -46,7 +53,9 @@ TR = {
         "p": ("Presentation", "browser SPA on Cloud Run"),
         "b": ("Business", "layered FastAPI + dependency-free Core"),
         "d": ("Data", "managed Postgres (prod) · embedded SQLite (demo)"),
-        "pf": ("Platform & CI/CD", "GCP-native, scale-to-zero"),
+        "infra": "Deployment infrastructure (cross-cutting)",
+        "rt": ("Runtime platform", "GCP-native, scale-to-zero"),
+        "ci": ("CI/CD pipeline", "Cloud Build → Cloud Run"),
         "a1": "REST / HTTPS (CORS)", "a2": "SQLAlchemy 2.0 async", "a3": "build & deploy",
         "cap": "Figure. MetricLens AI layered system architecture (GCP-native, Cloud Run).",
     },
@@ -54,7 +63,9 @@ TR = {
         "p": ("표현 계층 (Presentation)", "브라우저 SPA · Cloud Run"),
         "b": ("업무 계층 (Business)", "레이어드 FastAPI + 의존성 없는 Core"),
         "d": ("데이터 계층 (Data)", "운영 Postgres · 데모 SQLite"),
-        "pf": ("플랫폼 · CI/CD", "GCP 네이티브, scale-to-zero"),
+        "infra": "배포 인프라 (계층 횡단 관심사)",
+        "rt": ("런타임 플랫폼", "GCP 네이티브, scale-to-zero"),
+        "ci": ("CI/CD 파이프라인", "Cloud Build → Cloud Run"),
         "a1": "REST / HTTPS (CORS)", "a2": "SQLAlchemy 2.0 async", "a3": "빌드·배포",
         "cap": "그림. MetricLens AI 레이어드 시스템 아키텍처 (GCP 네이티브, Cloud Run).",
     },
@@ -108,21 +119,37 @@ def band(paths, label, sub, items, y, W, lang, h=104, bw=196):
 
 
 def arrow(x, y1, y2, label):
-    return (f'<line x1="{x}" y1="{y1}" x2="{x}" y2="{y2 - 9}" stroke="{SUB}" stroke-width="1.5"/>'
-            f'<path d="M{x - 5},{y2 - 9} L{x + 5},{y2 - 9} L{x},{y2} Z" fill="{SUB}"/>'
+    return (f'<line x1="{x}" y1="{y1}" x2="{x}" y2="{y2 - 9}" stroke="{INK}" stroke-width="1.4"/>'
+            f'<path d="M{x - 5},{y2 - 9} L{x + 5},{y2 - 9} L{x},{y2} Z" fill="{INK}"/>'
             + _text(x + 14, (y1 + y2) / 2 + 4, label, 11, SUB))
 
 
+def panel(paths, label, sub, items, x, y, w, h, lang):
+    """A self-contained infra panel (runtime / CI/CD) — kept separate from layers."""
+    parts = [f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="10" fill="{BAND_FILL}" stroke="{BAND_BORDER}"/>',
+             _text(x + 18, y + 24, label, 13, INK, "bold"), _text(x + 18, y + 40, sub, 10, SUB)]
+    pad, gap, bh = 18, 18, 64
+    n = len(items); bw = (w - 2 * pad - (n - 1) * gap) / n; by = y + h - pad - bh
+    for i, (slug, color, name, role_en, role_kr) in enumerate(items):
+        role = role_en if lang == "en" else role_kr
+        parts.append(block(paths, slug, color, name, role, x + pad + i * (bw + gap), by, bw, bh))
+    return "".join(parts)
+
+
 def build_one(paths, lang, suf):
-    T = TR[lang]; W, H = 1000, 720; cx = W / 2
+    T = TR[lang]; W, H = 1000, 664; cx = W / 2
     svg = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">',
            f'<rect width="{W}" height="{H}" fill="{BG}"/>']
-    y = 36
-    svg.append(band(paths, *T["p"], PRESENTATION, y, W, lang)); svg.append(arrow(cx, y + 104, y + 150, T["a1"])); y += 150
-    svg.append(band(paths, *T["b"], BUSINESS, y, W, lang)); svg.append(arrow(cx, y + 104, y + 150, T["a2"])); y += 150
-    svg.append(band(paths, *T["d"], DATA, y, W, lang)); y += 150
-    svg.append(arrow(cx, y + 46, y + 6, T["a3"]))
-    svg.append(band(paths, *T["pf"], PLATFORM, y + 46, W, lang, bw=232))
+    # Three logical layers (the layered architecture proper), connected top-to-bottom.
+    svg.append(band(paths, *T["p"], PRESENTATION, 36, W, lang)); svg.append(arrow(cx, 140, 186, T["a1"]))
+    svg.append(band(paths, *T["b"], BUSINESS, 186, W, lang)); svg.append(arrow(cx, 290, 336, T["a2"]))
+    svg.append(band(paths, *T["d"], DATA, 336, W, lang))
+    # Cross-cutting deployment infrastructure — visually separated, CI/CD split out.
+    svg.append(_text(40, 470, T["infra"], 12.5, INK, "bold"))
+    svg.append(f'<line x1="40" y1="480" x2="{W - 40}" y2="480" stroke="{BAND_BORDER}" stroke-width="1" stroke-dasharray="4 4"/>')
+    svg.append(arrow(cx, 446, 480, T["a3"]))
+    svg.append(panel(paths, *T["rt"], RUNTIME, 40, 494, 445, 132, lang))
+    svg.append(panel(paths, *T["ci"], CICD, 515, 494, 445, 132, lang))
     svg.append(_text(cx, H - 18, T["cap"], 12, INK, "normal", "middle"))
     svg.append("</svg>")
     txt = "".join(svg)
@@ -132,7 +159,7 @@ def build_one(paths, lang, suf):
 
 
 def build():
-    slugs = {s for grp in (PRESENTATION, BUSINESS, DATA, PLATFORM) for s, *_ in grp}
+    slugs = {s for grp in (PRESENTATION, BUSINESS, DATA, RUNTIME, CICD) for s, *_ in grp}
     print("Fetching official OSS logos…")
     paths = {s: fetch_path(s) for s in slugs}
     build_one(paths, "en", "")

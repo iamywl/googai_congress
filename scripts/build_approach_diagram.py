@@ -18,8 +18,9 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "docs" / "diagrams"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-BG, CARD, BORDER = "#ffffff", "#ffffff", "#c2c9d1"
-INK, SUB, ARROW, ACC, BANDC, FORMULA_BG = "#1f2328", "#57606a", "#57606a", "#1f77b4", "#1f77b4", "#eef4fb"
+# Paper style: white fills, thin near-black lines; blue kept only for the data sketch.
+BG, CARD, BORDER = "#ffffff", "#ffffff", "#16191d"
+INK, SUB, ARROW, ACC, BANDC, FORMULA_BG = "#16191d", "#454b52", "#16191d", "#1f77b4", "#1f77b4", "#ffffff"
 FONT = "NanumGothic, Helvetica, Arial, sans-serif"
 
 TR = {

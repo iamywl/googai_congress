@@ -20,8 +20,9 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "docs" / "diagrams"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-BG, BAND, BAND_BORDER, BOX_BORDER = "#ffffff", "#f5f7f9", "#d0d7de", "#c2c9d1"
-INK, SUB, ARROW, G = "#1f2328", "#57606a", "#57606a", "#4285F4"
+# Paper style: white fills, thin near-black lines.
+BG, BAND, BAND_BORDER, BOX_BORDER = "#ffffff", "#ffffff", "#16191d", "#16191d"
+INK, SUB, ARROW, G = "#16191d", "#454b52", "#16191d", "#4285F4"
 FONT = "NanumGothic, Helvetica, Arial, sans-serif"
 
 _PATH_RE = re.compile(r'<path[^>]*\sd="([^"]+)"')
@@ -170,7 +171,6 @@ def build_one(paths, lang, suf):
             box(paths, fl_x, fl_y, fl_w, fl_h, None, T["fleet"], T["fleet_sub"])]
     be_b = y2 + bh        # backend box bottom
     mon_cx = mon_x + mon_w / 2     # 185
-    ce_cx = ce_x + ce_w / 2        # 585
     read_y, push_y = 402, 540
     svg += [
         # backend -> Compute Engine API (resize), straight down
