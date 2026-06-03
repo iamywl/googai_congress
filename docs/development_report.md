@@ -18,9 +18,10 @@ GPU 없이 범용 CPU만으로 구동되는 경량 시계열 모델로 부하를
 
 | 목표 | 기준 | 구현/검증 |
 |---|---|---|
-| 예측 정확도 | MAPE ≤ 15% | `forecaster`가 백테스트 MAPE 산출, 시드/데모에서 11.3% 관측 |
-| 유휴 식별 | 피크 기반 안전 사이징 | p95 피크 + 안전 마진 1.2로 과소축소 차단 |
+| 예측 정확도 | MAPE ≤ 15% | 대화형 호스트 백테스트 MAPE **9–13%** (목표 충족). 준유휴 호스트는 분모 효과로 본질적 높음(정직 보고) |
+| 유휴 식별 | 피크 기반 안전 사이징 | p95 피크 + 안전 마진 1.2로 과소축소 차단(버스트 호스트 자동 유지) |
 | 실시간성 | 대시보드 반영 | `/health` DB-free, 예측·권장 단일 트랜잭션 |
+| 데이터 대표성 | 실측 트레이스 정렬 | Azure/Alibaba/Barroso 근거 6 아키타입(§3.5, [09](09_workload_modeling.md)) |
 
 ---
 
@@ -29,6 +30,11 @@ GPU 없이 범용 CPU만으로 구동되는 경량 시계열 모델로 부하를
 Presentation / Business / Data Access 3계층, 백엔드는 Controller → Service →
 Repository 수직 분리에 순수 Core(예측·최적화) 격리. 상세: [02_architecture_volume.md](02_architecture_volume.md),
 [06_infrastructure_layout.md](06_infrastructure_layout.md).
+
+![MetricLens AI 시스템 아키텍처](diagrams/architecture.png)
+
+> 공식 오픈소스 브랜드 로고(Simple Icons, CC0)로 구성. 재생성:
+> `python scripts/build_architecture_diagram.py`.
 
 - **Presentation**: React 19 + ECharts SPA → nginx(non-root) → Cloud Run `metriclens-frontend`
 - **Business**: FastAPI(레이어드) → Cloud Run `metriclens-backend` (non-root uid 10001)
@@ -65,18 +71,31 @@ Repository 수직 분리에 순수 Core(예측·최적화) 격리. 상세: [02_a
   "Downsized web-prod-01: 16→8 vCPU (+50% capacity)" 형태로 시각화(재방문 시에도 유지).
 - 백엔드 미가용 시 결정론적 데모 데이터로 폴백(스크린샷·프리뷰 재현성 확보).
 
+### 3.5 GCP 머신 타입 카탈로그 (`backend/app/core/machine_types.py`)
+- E2·N2·C2·C3 등 **GCP 사전정의 인스턴스 카탈로그**(vCPU·메모리)를 제공하고
+  `GET /api/v1/machine-types`로 노출. 권장안의 추상적 `(vcpu, memory)`를 가장 근접한
+  실제 인스턴스로 **스냅**하여 UI가 "n2-standard-8" 같은 주문 가능한 사양을 표시.
+- UI는 머신 타입 드롭다운으로 임의의 GCP 인스턴스로 실제 리사이즈 가능.
+
+### 3.6 시험 데이터의 통계적 대표성 (`backend/app/core/workload.py`)
+- 데모/시드 메트릭을 **공개 데이터센터 트레이스에 정렬**: Azure Resource Central
+  (SOSP'17), Alibaba 2018, Barroso & Hölzle. 6개 워크로드 아키타입(대화형/배치/정상상태)
+  × 14일 시간단위 = 호스트당 336표본. 상세·출처: [09_workload_modeling.md](09_workload_modeling.md).
+
 ---
 
 ## 4. 자동화 테스트 결과
 
-`scripts/run_tests.sh` 게이트: **ruff(lint/정적분석) 통과 + pytest 27/27 통과.**
+`scripts/run_tests.sh` 게이트: **ruff(lint/정적분석) 통과 + pytest 45/45 통과.**
 
 | 테스트 그룹 | 개수 | 검증 대상 (경계값/동등분할 기반) |
 |---|---|---|
 | `test_forecaster.py` | 8 | 빈 시계열/0 지평 거부, 단일표본, 상수, 순수 추세 외삽, 계절 복원, 신뢰구간 포함, MAPE 비음수 |
 | `test_optimizer.py` | 9 | 저부하 다운사이즈, 포화 유지, 헤드룸 제약, 최소 할당 바닥, 잘못된 입력 거부, p95 피크 |
-| `test_api.py` | 10 | 헬스, 호스트 CRUD, 중복 409, 검증 422, 404, 적재/조회, 예측·권장 엔드투엔드 |
-| **합계** | **27** | 전부 통과 |
+| `test_api.py` | 13 | 헬스, 호스트 CRUD, 중복 409, 검증 422, 404, 적재/조회, 예측·권장·리사이즈 엔드투엔드 |
+| `test_machine_types.py` | 6 | 카탈로그 무결성, 정확 매칭, 최소충족 근접 탐색, 초과 시 최대 폴백 |
+| `test_workload.py` | 9 | 결정론성, 일주기성, 버스트성, 정상상태, 저활용, 대화형 MAPE≤15%, 물리경계 |
+| **합계** | **45** | 전부 통과 |
 
 > 실행 환경에 PostgreSQL/Docker가 없어, 통합 테스트는 **인메모리 리포지토리로
 > 실제 Controller→Service→Core 경로를 구동**한다. 시드의 실제 DB 적재와
@@ -93,9 +112,14 @@ Repository 수직 분리에 순수 Core(예측·최적화) 격리. 상세: [02_a
 ### 5.1 대시보드 개요 (web-prod-01)
 ![대시보드 개요](screenshots/dashboard_overview.png)
 
-상단: 호스트 탭(PROD/STAGING/DEV). 좌측: 48시간 CPU·Memory·Net 멀티시리즈.
-우측 상단: +60분 CPU 예측과 95% 구간, **MAPE 11.3% (목표 ≤ 15% 충족)**.
-우측 하단: 리사이징 권장 **16 → 8 vCPU / 32G → 16G, 절감 50%, SLO 99.90%**.
+상단: 호스트 탭(머신 타입 표기). 좌측: CPU·Memory·Net 멀티시리즈(지표별 `i` 설명).
+우측 상단: +60분 CPU 예측과 95% 구간, 백테스트 MAPE(목표 ≤ 15%).
+우측 하단: 리사이징 권장과 근접 GCP 인스턴스, 절감률·SLO 99.90%.
+
+> 데모 플릿은 근거 기반 6 호스트(§3.6)로 확장됨: 과프로비저닝 호스트(web-prod-01
+> 16→9 vCPU ≈36%, api-staging-02 ≈54%, batch-dev-03 ≈52%)는 다운사이징, 중부하
+> `api-prod-04`·버스트 `batch-etl-01`은 자동 유지, 메모리 바운드 `cache-prod-05`는
+> CPU만 축소. 스크린샷은 배포 시 `scripts/capture_screenshots.js`로 자동 갱신된다.
 
 ### 5.2 호스트별 화면
 | api-staging-02 | batch-dev-03 |

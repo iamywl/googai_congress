@@ -11,6 +11,7 @@
 !/.gitignore
 !/.gcloudignore
 !/README.md
+!/CLAUDE.md
 !/cloudbuild.yaml
 !/usenix2022.docx
 !/backend/

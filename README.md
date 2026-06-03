@@ -25,20 +25,24 @@ GPU 없이 범용 CPU만으로 부하를 예측하고, 정수 계획법으로 SL
 
 상세 경쟁 분석: [docs/08_competitive_analysis.md](docs/08_competitive_analysis.md)
 
+## 아키텍처
+
+![MetricLens AI 시스템 아키텍처](docs/diagrams/architecture.png)
+
 ## 구성
 
 | 영역 | 위치 | 스택 |
 |---|---|---|
 | 프론트엔드 | [frontend/](frontend/) | React 19 + Vite + ECharts, nginx(non-root) |
 | 백엔드 | [backend/](backend/) | FastAPI 레이어드 + 순수 Core(예측·정수계획), SQLAlchemy async |
-| DB 스키마/시드 | [scripts/](scripts/) | `schema.sql`, `generate_test_data.sh`(결정론·멱등) |
+| DB 스키마/시드 | [scripts/](scripts/) | `schema.sql`, 근거 기반 워크로드 생성기 `app/core/workload.py`(결정론·멱등) |
 | CI/CD | [cloudbuild.yaml](cloudbuild.yaml), [scripts/deploy.sh](scripts/deploy.sh) | Cloud Build 9-스테이지 → Cloud Run |
-| 기술 문서 | [docs/](docs/) | 기능명세·아키텍처·API·ERD·시퀀스·인프라·테스트·개발보고서 |
+| 기술 문서 | [docs/](docs/) | 기능명세·아키텍처·API·ERD·시퀀스·인프라·테스트·경쟁분석·워크로드모델링·개발보고서 |
 
 ## 빠른 시작 (로컬)
 
 ```bash
-# 백엔드 품질 게이트 (lint + 27 tests)
+# 백엔드 품질 게이트 (lint + 45 tests)
 cd backend && python -m venv .venv && source .venv/bin/activate \
   && pip install -r requirements-dev.txt && cd .. && SKIP_FRONTEND=1 ./scripts/run_tests.sh
 

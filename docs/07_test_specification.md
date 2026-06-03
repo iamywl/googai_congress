@@ -2,7 +2,9 @@
 
 테스트는 경계값 분석(BVA)과 동등 분할(EP)에 기반한다. 순수 Core 로직은 DB 없이
 단위 테스트하고, API는 인메모리 리포지토리로 Controller→Service→Core 전 경로를
-구동하는 통합 테스트로 검증한다. 실행: `cd backend && pytest -q` (총 27건).
+구동하는 통합 테스트로 검증한다. 실행: `cd backend && pytest -q` (총 45건: 예측기 8,
+최적화기 9, API 13, 머신타입 6, 워크로드 9). 워크로드 데이터의 통계적 대표성 검증은
+[09_workload_modeling.md](09_workload_modeling.md) 참조.
 
 ## 1. 단위 테스트 — 예측기 (`tests/test_forecaster.py`, 8건)
 
@@ -61,6 +63,6 @@
 
 ## 5. 합격 기준 (Definition of Done)
 
-- `ruff check .` 무결, `pytest` **27/27 통과**.
+- `ruff check .` 무결, `pytest` **45/45 통과**.
 - 프론트엔드 `npm run lint && npm run build` 성공.
 - Cloud Build 9-스테이지 통과 + 배포 후 `/health` 200.

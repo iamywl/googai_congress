@@ -77,10 +77,15 @@ export function nearestMachineType(vcpu, memoryMb, catalog = SAMPLE_MACHINE_TYPE
   return [...catalog].sort((a, b) => b.vcpu - a.vcpu || b.memory_mb - a.memory_mb)[0];
 }
 
+// Mirrors the backend demo fleet (app/seed.py) so the offline fallback shows the
+// same six research-grounded archetypes.
 export const SAMPLE_HOSTS = [
   { id: 'sample-host-1', hostname: 'web-prod-01', environment: 'PROD', vcpu_count: 16, memory_mb: 32768 },
-  { id: 'sample-host-2', hostname: 'api-staging-02', environment: 'STAGING', vcpu_count: 8, memory_mb: 16384 },
-  { id: 'sample-host-3', hostname: 'batch-dev-03', environment: 'DEV', vcpu_count: 4, memory_mb: 8192 },
+  { id: 'sample-host-2', hostname: 'api-prod-04', environment: 'PROD', vcpu_count: 8, memory_mb: 16384 },
+  { id: 'sample-host-3', hostname: 'cache-prod-05', environment: 'PROD', vcpu_count: 8, memory_mb: 65536 },
+  { id: 'sample-host-4', hostname: 'batch-etl-01', environment: 'STAGING', vcpu_count: 16, memory_mb: 32768 },
+  { id: 'sample-host-5', hostname: 'api-staging-02', environment: 'STAGING', vcpu_count: 8, memory_mb: 16384 },
+  { id: 'sample-host-6', hostname: 'batch-dev-03', environment: 'DEV', vcpu_count: 4, memory_mb: 8192 },
 ];
 
 function sampleForecast(hostId) {
