@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import {
+  applyRealResize,
   applyResize,
   checkHealth,
   fetchForecast,
   fetchRecommendation,
   originalSizeFor,
+  syncGcp,
 } from '../api.js';
 import InfoTip from '../components/InfoTip.jsx';
 import { GLOSSARY } from '../glossary.js';
@@ -83,6 +85,49 @@ export default function TestsView({ hosts, onChanged }) {
           });
         }
         return { title: 'Fleet optimisation applied', rows, note: '권장 사양으로 실제 리사이즈됨(활동 로그에 기록).' };
+      },
+    },
+    {
+      id: 'gcpsync',
+      label: '🔄 Sync real GCP fleet',
+      desc: '라벨된 실제 GCE 인스턴스(ml-*)의 CPU를 Cloud Monitoring에서 가져와 호스트로 등록합니다.',
+      fn: async () => {
+        const { hosts: synced, error } = await syncGcp();
+        if (error) {
+          return { title: 'GCP sync', rows: [{ label: 'error', value: error, ok: false }], note: '백엔드 GCP 권한/배포를 확인하세요.' };
+        }
+        return {
+          title: `실제 GCE 인스턴스 ${synced.length}개 동기화`,
+          rows: synced.map((h) => ({
+            label: h.hostname,
+            value: `${h.machine_type || ''} · ${h.vcpu_count} vCPU / ${(h.memory_mb / 1024).toFixed(0)} GB`,
+            ok: true,
+          })),
+          note: 'Cloud Monitoring 실측 CPU가 적재됨(메모리는 에이전트 미설치로 프록시).',
+        };
+      },
+    },
+    {
+      id: 'realresize',
+      label: '🧪 Real resize: idle VM → e2-micro',
+      desc: '유휴 실제 VM을 e2-micro로 실제 리사이즈(stop→변경→start). 월 ₩300k 비용 가드.',
+      fn: async () => {
+        const { hosts: synced } = await syncGcp();
+        const target = synced.find((h) => h.hostname.includes('idle')) ||
+          synced.find((h) => h.provider === 'gce');
+        if (!target) {
+          return { title: 'Real resize', rows: [{ label: 'no real host', value: '먼저 GCP sync 필요', ok: false }] };
+        }
+        try {
+          const { host } = await applyRealResize(target, 'e2-micro');
+          return {
+            title: 'Real resize 적용됨',
+            rows: [{ label: host.hostname, value: `→ ${host.machine_type} (${host.vcpu_count} vCPU / ${(host.memory_mb / 1024).toFixed(0)} GB)`, ok: true }],
+            note: '실제 VM이 stop→머신타입 변경→start 되었습니다(다운타임 ~1분).',
+          };
+        } catch (e) {
+          return { title: 'Real resize', rows: [{ label: target.hostname, value: String(e.message || e), ok: false }], note: '비용 가드 또는 오류로 미적용.' };
+        }
       },
     },
     {

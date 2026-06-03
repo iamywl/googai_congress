@@ -36,6 +36,12 @@ class Host(Base):
     vcpu_count: Mapped[int] = mapped_column(Integer, nullable=False)
     memory_mb: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(nullable=False, default=func.now())
+    # Real-instance provenance: "demo" (synthetic seed) or "gce" (a live GCE VM
+    # synced from Cloud Monitoring). zone/machine_type are set for "gce" hosts so
+    # a real resize can target the actual instance.
+    provider: Mapped[str] = mapped_column(String(16), nullable=False, default="demo")
+    zone: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    machine_type: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     __table_args__ = (
         CheckConstraint("vcpu_count BETWEEN 1 AND 256", name="ck_hosts_vcpu"),

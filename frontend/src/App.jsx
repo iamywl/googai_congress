@@ -167,7 +167,9 @@ export default function App() {
               {h.vcpu_count} vCPU · {(h.memory_mb / 1024).toFixed(0)} GB
             </span>
             <span className="host-mtype">
-              {nearestMachineType(h.vcpu_count, h.memory_mb, machineTypes.length ? machineTypes : undefined).name}
+              {h.provider === 'gce'
+                ? `${h.machine_type || ''} · ☁ GCE`
+                : nearestMachineType(h.vcpu_count, h.memory_mb, machineTypes.length ? machineTypes : undefined).name}
             </span>
           </button>
         ))}

@@ -256,6 +256,44 @@ export async function checkHealth() {
   return { live: true, health, db };
 }
 
+// --- Real GCP fleet (Cloud Monitoring ingestion + real VM resize) ---
+
+export async function syncGcp() {
+  try {
+    const hosts = await tryFetch('/api/v1/gcp/sync', { method: 'POST' });
+    return { hosts, live: true };
+  } catch (e) {
+    return { hosts: [], live: false, error: String(e.message || e) };
+  }
+}
+
+export async function fetchGcpInstances() {
+  try {
+    return { instances: await tryFetch('/api/v1/gcp/instances'), live: true };
+  } catch {
+    return { instances: [], live: false };
+  }
+}
+
+// Resize the real GCE VM behind a host. Surfaces the backend's error detail
+// (e.g. budget-guard 402) as the thrown message.
+export async function applyRealResize(host, machineType) {
+  const resp = await fetch(
+    `${BASE_URL}/api/v1/gcp/hosts/${host.id}/resize?machine_type=${encodeURIComponent(machineType)}`,
+    { method: 'POST' },
+  );
+  if (!resp.ok) {
+    let detail = `HTTP ${resp.status}`;
+    try {
+      detail = (await resp.json()).detail || detail;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(detail);
+  }
+  return { host: await resp.json() };
+}
+
 // Original (seed) size for a hostname, used by the "reset fleet" scenario.
 export function originalSizeFor(hostname) {
   const h = SAMPLE_HOSTS.find((s) => s.hostname === hostname);

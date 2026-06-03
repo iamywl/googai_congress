@@ -37,6 +37,9 @@ class HostOut(BaseModel):
     vcpu_count: int
     memory_mb: int
     created_at: datetime
+    provider: str | None = "demo"
+    zone: str | None = None
+    machine_type: str | None = None
 
 
 class MetricIn(BaseModel):

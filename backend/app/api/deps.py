@@ -20,6 +20,7 @@ from ..repositories import (
     MetricRepository,
 )
 from ..services import AnalysisService, HostService, MetricService
+from ..services_gcp import GcpSyncService
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
@@ -41,6 +42,15 @@ def get_analysis_service(session: SessionDep) -> AnalysisService:
     )
 
 
+def get_gcp_sync_service(session: SessionDep) -> GcpSyncService:
+    return GcpSyncService(
+        HostRepository(session),
+        MetricRepository(session),
+        ActionRepository(session),
+    )
+
+
 HostServiceDep = Annotated[HostService, Depends(get_host_service)]
 MetricServiceDep = Annotated[MetricService, Depends(get_metric_service)]
 AnalysisServiceDep = Annotated[AnalysisService, Depends(get_analysis_service)]
+GcpSyncServiceDep = Annotated[GcpSyncService, Depends(get_gcp_sync_service)]

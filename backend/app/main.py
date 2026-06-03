@@ -16,6 +16,7 @@ from sqlalchemy import text
 from .api import (
     routes_analysis,
     routes_catalog,
+    routes_gcp,
     routes_history,
     routes_hosts,
     routes_metrics,
@@ -62,6 +63,7 @@ app.include_router(routes_metrics.router)
 app.include_router(routes_analysis.router)
 app.include_router(routes_catalog.router)
 app.include_router(routes_history.router)
+app.include_router(routes_gcp.router)
 
 
 @app.get("/", tags=["Meta"])
