@@ -256,6 +256,11 @@ export async function checkHealth() {
   return { live: true, health, db };
 }
 
+// Backtest the model vs naive baselines + interval coverage for a host.
+export async function fetchEvaluation(host) {
+  return tryFetch(`/api/v1/hosts/${host.id}/evaluation`, { method: 'POST' });
+}
+
 // --- Real GCP fleet (Cloud Monitoring ingestion + real VM resize) ---
 
 export async function syncGcp() {

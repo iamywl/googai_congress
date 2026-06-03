@@ -97,6 +97,25 @@ class ActionOut(BaseModel):
     saving_pct: float | None
 
 
+class MetricsOut(BaseModel):
+    mape: float
+    rmse: float
+    mae: float
+    n: int
+
+
+class EvaluationOut(BaseModel):
+    """Model-vs-baseline backtest + prediction-interval calibration for a host."""
+
+    host_id: str
+    model: MetricsOut
+    naive: MetricsOut
+    seasonal_naive: MetricsOut
+    coverage: float
+    beats_naive: bool
+    beats_seasonal_naive: bool
+
+
 class MachineTypeOut(BaseModel):
     """A predefined GCP machine type the UI can target for a resize."""
 

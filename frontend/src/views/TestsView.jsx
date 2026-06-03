@@ -3,6 +3,7 @@ import {
   applyRealResize,
   applyResize,
   checkHealth,
+  fetchEvaluation,
   fetchForecast,
   fetchRecommendation,
   originalSizeFor,
@@ -85,6 +86,33 @@ export default function TestsView({ hosts, onChanged }) {
           });
         }
         return { title: 'Fleet optimisation applied', rows, note: '권장 사양으로 실제 리사이즈됨(활동 로그에 기록).' };
+      },
+    },
+    {
+      id: 'evaluate',
+      label: '📊 Evaluate model vs baselines',
+      desc: '각 호스트에서 모델을 naive·seasonal-naive 기준선과 백테스트 비교하고 95% 예측구간 커버리지를 측정합니다.',
+      fn: async () => {
+        const rows = [];
+        for (const host of hosts) {
+          try {
+            const e = await fetchEvaluation(host);
+            const beats = e.beats_seasonal_naive && e.beats_naive ? 'beats both' :
+              e.beats_seasonal_naive ? 'beats s-naive' : 'no';
+            rows.push({
+              label: host.hostname,
+              value: `MAPE ${e.model.mape}% vs s-naive ${e.seasonal_naive.mape}% · cover ${e.coverage} · ${beats}`,
+              ok: e.beats_seasonal_naive,
+            });
+          } catch (err) {
+            rows.push({ label: host.hostname, value: String(err.message || err), ok: false });
+          }
+        }
+        return {
+          title: '모델 평가 (백테스트 vs 기준선)',
+          rows,
+          note: 'ok = 모델 RMSE ≤ seasonal-naive. 커버리지는 0.95에 가까울수록 보정 양호.',
+        };
       },
     },
     {

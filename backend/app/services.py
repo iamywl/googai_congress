@@ -11,7 +11,7 @@ from datetime import datetime
 from uuid import uuid4
 
 from .config import settings
-from .core import forecaster, optimizer
+from .core import evaluation, forecaster, optimizer
 from .models import Action, Forecast, Host, Metric, Recommendation
 from .repositories import (
     ActionRepository,
@@ -239,6 +239,15 @@ class AnalysisService:
             slo_confidence=proposal.slo_confidence,
         )
         return await self.analysis.save_recommendation(record)
+
+    async def evaluate(self, host_id: str) -> evaluation.Evaluation:
+        """Backtest the model against naive baselines + measure PI coverage."""
+        host = await self._require_host(host_id)
+        samples = await self.metrics.list_by_host(host_id)
+        series = [float(m.cpu_pct) for m in samples]
+        if len(series) < settings.seasonal_period * 2 + 2:
+            raise InsufficientDataError(host.id)
+        return evaluation.evaluate(series, period=settings.seasonal_period)
 
     async def _require_host(self, host_id: str) -> Host:
         host = await self.hosts.get(host_id)

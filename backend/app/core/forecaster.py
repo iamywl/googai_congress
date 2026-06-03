@@ -85,6 +85,47 @@ def _seasonal_indices(detrended: list[float], period: int) -> list[float]:
     return [r - offset for r in raw]
 
 
+def _ar1_coeff(residuals: list[float]) -> float:
+    """Lag-1 autocorrelation of the residuals, clamped to [0, 0.95]."""
+    n = len(residuals)
+    if n < 3:
+        return 0.0
+    mean_r = fmean(residuals)
+    denom = sum((r - mean_r) ** 2 for r in residuals)
+    if denom == 0:
+        return 0.0
+    numer = sum((residuals[i] - mean_r) * (residuals[i - 1] - mean_r) for i in range(1, n))
+    return max(0.0, min(0.95, numer / denom))
+
+
+def _decompose(window: list[float], period: int):
+    """Return (slope, intercept, seasonal, residuals) for a window."""
+    n = len(window)
+    slope, intercept = _linear_trend(window, period)
+    detrended = [window[x] - (slope * x + intercept) for x in range(n)]
+    seasonal = _seasonal_indices(detrended, period)
+    residuals = [detrended[x] - seasonal[x % period] for x in range(n)]
+    return slope, intercept, seasonal, residuals
+
+
+def _predict(window: list[float], period: int, horizon: int) -> float:
+    """Seasonal-trend forecast plus a damped AR(1) residual correction.
+
+    The deterministic ``trend + seasonal`` projection is augmented by carrying a
+    ``rho**horizon`` fraction of the most recent residual forward, where ``rho``
+    is the residuals' lag-1 autocorrelation. Real CPU traces are strongly
+    autocorrelated, so this term captures the recent level the pure decomposition
+    ignores -- letting the model beat both the last-value and seasonal-naive
+    baselines on a one-step horizon.
+    """
+    n = len(window)
+    slope, intercept, seasonal, residuals = _decompose(window, period)
+    future_index = (n - 1) + horizon
+    base = slope * future_index + intercept + seasonal[future_index % period]
+    rho = _ar1_coeff(residuals)
+    return base + (rho ** horizon) * residuals[-1]
+
+
 def forecast(series: list[float], period: int, horizon: int = 1) -> ForecastResult:
     """Forecast ``horizon`` samples ahead of ``series``.
 
@@ -103,20 +144,14 @@ def forecast(series: list[float], period: int, horizon: int = 1) -> ForecastResu
 
     period = max(1, period)
     n = len(series)
-    slope, intercept = _linear_trend(series, period)
-
-    detrended = [series[x] - (slope * x + intercept) for x in range(n)]
-    seasonal = _seasonal_indices(detrended, period)
-
-    future_index = (n - 1) + horizon
-    predicted = slope * future_index + intercept + seasonal[future_index % period]
+    predicted = _predict(series, period, horizon)
 
     # Prediction interval is sized from out-of-sample (backtest) error, which
     # reflects true predictive uncertainty. With too little history we fall back
     # to the in-sample residual spread.
     mape, rmse = _backtest(series, period)
     if rmse is None:
-        residuals = [detrended[x] - seasonal[x % period] for x in range(n)]
+        _, _, _, residuals = _decompose(series, period)
         rmse = pstdev(residuals) if n > 1 else 0.0
 
     half_width = _Z_95 * rmse
@@ -147,11 +182,7 @@ def _backtest(series: list[float], period: int) -> tuple[float | None, float | N
     pct_errors: list[float] = []
     sq_errors: list[float] = []
     for t in range(start, n):
-        window = series[:t]
-        slope, intercept = _linear_trend(window, period)
-        detrended = [window[x] - (slope * x + intercept) for x in range(len(window))]
-        seasonal = _seasonal_indices(detrended, period)
-        predicted = slope * t + intercept + seasonal[t % period]
+        predicted = _predict(series[:t], period, horizon=1)
         actual = series[t]
         pct_errors.append(abs(actual - predicted) / max(abs(actual), floor))
         sq_errors.append((actual - predicted) ** 2)

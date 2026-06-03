@@ -134,42 +134,68 @@ def _clamp(value: float, low: float, high: float) -> float:
     return max(low, min(high, value))
 
 
-def _cpu_at(arch: Archetype, day: int, hour: int, seed: str) -> float:
-    """CPU% for a given day/hour under the archetype's class behaviour."""
-    idx = day * 24 + hour
+# Stochastic structure parameters, calibrated so the generated series exhibit
+# the autocorrelation, day-to-day variability, and occasional anomalies that
+# real datacentre CPU traces show (rather than a perfectly repeating curve):
+#   * AR(1) autocorrelated noise — consecutive hours are correlated (Azure/
+#     Alibaba traces are strongly autocorrelated, not i.i.d.).
+#   * Day-to-day amplitude variation — each day's peak is scaled, so no two days
+#     are identical.
+#   * A slow linear trend over the window (capacity creep / decay).
+#   * Heteroscedastic noise — variance grows with the load level.
+#   * Rare anomaly spikes (incidents).
+_AR_RHO = 0.55          # AR(1) coefficient
+_DAY_AMP = 0.15         # +/- day-to-day peak amplitude variation
+_TREND_MAX = 0.08       # +/- slow drift across the whole window
+_ANOMALY_THRESH = 0.99   # ~1% of hours get an anomaly spike
+
+
+def _base_level(arch: Archetype, day: int, hour: int, seed: str) -> float:
+    """Deterministic mean CPU% (no noise) for a day/hour under the archetype."""
     if arch.workload_class == "batch":
         if hour in arch.spike_hours:
-            base = arch.spike_peak * (0.9 + 0.1 * _unit(seed, idx))
-        else:
-            base = arch.cpu_trough
-    else:  # interactive / steady share the diurnal curve (steady is near-flat)
-        base = arch.cpu_trough + (arch.cpu_peak - arch.cpu_trough) * _DIURNAL[hour]
-        if arch.weekend_factor != 1.0 and (day % 7) in (5, 6):
-            base *= arch.weekend_factor
-    return round(_clamp(base + _noise(seed, idx, arch.noise_amp), 1, 100))
+            return arch.spike_peak * (0.9 + 0.1 * _unit(seed, day * 24 + hour))
+        return arch.cpu_trough
+    base = arch.cpu_trough + (arch.cpu_peak - arch.cpu_trough) * _DIURNAL[hour]
+    if arch.weekend_factor != 1.0 and (day % 7) in (5, 6):
+        base *= arch.weekend_factor
+    return base
 
 
 def generate(arch: Archetype, days: int, seed: str) -> list[Sample]:
     """Generate ``days`` of hourly samples for an archetype, deterministically.
 
-    A minimum of three days is enforced — the Azure trace's threshold for a
-    workload's periodicity to be reliably detectable (and for the forecaster's
-    block-mean trend estimator to separate trend from the daily season).
+    The mean follows the archetype's diurnal/batch shape; on top of it sit an
+    AR(1) heteroscedastic noise process, day-to-day amplitude variation, a slow
+    trend, and rare anomalies — so the series is statistically representative of
+    a real trace rather than a clean repeating curve. A minimum of three days is
+    enforced (the Azure trace's periodicity-detection threshold).
     """
     if days < 3:
         raise ValueError("days must be >= 3 for a representative seasonal series")
+    total = days * 24
+    trend_dir = (_unit(seed + "t", 0) - 0.5) * 2.0 * _TREND_MAX
     samples: list[Sample] = []
-    for hour_offset in range(days * 24):
-        day, hour = divmod(hour_offset, 24)
-        cpu = _cpu_at(arch, day, hour, seed)
+    resid = 0.0
+    for i in range(total):
+        day, hour = divmod(i, 24)
+        day_amp = 1.0 + (_unit(seed + "d", day) - 0.5) * 2.0 * _DAY_AMP
+        trend = 1.0 + trend_dir * (i / total)
+        level = _base_level(arch, day, hour, seed) * day_amp * trend
+
+        white = _noise(seed + "w", i, arch.noise_amp)
+        resid = _AR_RHO * resid + white               # AR(1) autocorrelation
+        cpu = level + resid * (0.6 + level / 120.0)    # heteroscedastic
+
+        if _unit(seed + "a", i) > _ANOMALY_THRESH:     # rare incident spike
+            cpu += 12.0 + 22.0 * _unit(seed + "x", i)
+
+        cpu = round(_clamp(cpu, 1, 100))
         mem = round(_clamp(
-            arch.mem_base + arch.mem_coef * cpu + _noise(seed + "m", hour_offset, 2.0),
-            1, 100,
+            arch.mem_base + arch.mem_coef * cpu + _noise(seed + "m", i, 2.0), 1, 100,
         ))
         samples.append(Sample(
-            hour=hour_offset,
-            cpu_pct=cpu,
-            mem_pct=mem,
+            hour=i, cpu_pct=cpu, mem_pct=mem,
             net_in_kbps=round(cpu * arch.net_in_coef + 50),
             net_out_kbps=round(cpu * arch.net_out_coef + 30),
         ))
