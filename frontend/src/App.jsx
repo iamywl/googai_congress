@@ -138,9 +138,14 @@ export default function App() {
             <p>Time-series load forecasting &amp; resizing optimisation</p>
           </div>
         </div>
-        <span className={`badge ${live ? 'live' : 'demo'}`}>
-          {live ? '● live' : '● demo data'}
-        </span>
+        <div className="topbar-right">
+          <a className="deck-link" href="/presentation.html" target="_blank" rel="noreferrer">
+            📊 소개자료
+          </a>
+          <span className={`badge ${live ? 'live' : 'demo'}`}>
+            {live ? '● live' : '● demo data'}
+          </span>
+        </div>
       </header>
 
       <NavBar view={view} onChange={setView} />
