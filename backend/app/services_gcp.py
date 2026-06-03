@@ -67,9 +67,12 @@ class GcpSyncService:
                 naive = ts.replace(tzinfo=None)
                 if naive in existing:
                     continue
+                # Shared-core (e2) instances can momentarily report utilisation
+                # above 100% during a burst; clamp to the metric's valid range.
+                cpu = max(0.0, min(100.0, cpu))
                 # Memory is unmonitored without the Ops Agent; store a CPU-linked
                 # proxy so recommendations stay sensible (documented limitation).
-                mem = min(95.0, round(cpu * 0.6 + 20.0, 2))
+                mem = max(0.0, min(95.0, round(cpu * 0.6 + 20.0, 2)))
                 rows.append(Metric(
                     host_id=host.id, ts=naive, cpu_pct=cpu, mem_pct=mem,
                     net_in_kbps=0, net_out_kbps=0,
