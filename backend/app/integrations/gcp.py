@@ -206,3 +206,81 @@ def resize_instance(project: str, zone: str, name: str, machine_type: str) -> No
         ),
     ).result()
     client.start(project=project, zone=zone, instance=name).result()
+
+
+# A compact, dependency-free diurnal CPU load generator for an on-demand test
+# node, so a freshly-launched instance immediately produces a real signal.
+_TEST_STARTUP = (
+    "#!/bin/bash\n"
+    "nohup python3 -c \""
+    "import time,math,datetime\n"
+    "while True:\n"
+    " h=datetime.datetime.utcnow().hour\n"
+    " d=0.15+0.35*abs(math.sin(h/24.0*6.2832))\n"
+    " e=time.time()+0.5*d\n"
+    " while time.time()<e: pass\n"
+    " time.sleep(max(0.0,0.5*(1-d)))"
+    "\" >/var/log/mlload.log 2>&1 &\n"
+)
+
+
+def instance_status(project: str, zone: str, name: str) -> str | None:
+    """RUNNING/STAGING/… status of an instance, or None if it does not exist."""
+    try:
+        from google.cloud import compute_v1
+    except ImportError as exc:  # pragma: no cover
+        raise GcpError("google-cloud-compute not installed") from exc
+    client = compute_v1.InstancesClient()
+    try:
+        return client.get(project=project, zone=zone, instance=name).status
+    except Exception:  # noqa: BLE001 - not found
+        return None
+
+
+def create_instance(
+    project: str, zone: str, name: str, machine_type: str, label: str
+) -> str:
+    """Create a small labelled test instance (scale-out demo). Idempotent.
+
+    Returns the instance status. The instance has no attached service account
+    (avoids an actAs requirement) and no external IP; the inline startup script
+    needs no internet. Blocks until the create operation completes.
+    """
+    try:
+        from google.cloud import compute_v1
+    except ImportError as exc:  # pragma: no cover
+        raise GcpError("google-cloud-compute not installed") from exc
+
+    client = compute_v1.InstancesClient()
+    existing = instance_status(project, zone, name)
+    if existing is not None:
+        return existing
+
+    config = compute_v1.Instance(
+        name=name,
+        machine_type=f"zones/{zone}/machineTypes/{machine_type}",
+        labels={label: "true", "testnode": "true"},
+        disks=[compute_v1.AttachedDisk(
+            boot=True, auto_delete=True,
+            initialize_params=compute_v1.AttachedDiskInitializeParams(
+                source_image="projects/debian-cloud/global/images/family/debian-12"),
+        )],
+        network_interfaces=[compute_v1.NetworkInterface(network="global/networks/default")],
+        service_accounts=[],
+        metadata=compute_v1.Metadata(items=[
+            compute_v1.Items(key="startup-script", value=_TEST_STARTUP)]),
+    )
+    client.insert(project=project, zone=zone, instance_resource=config).result()
+    return instance_status(project, zone, name) or "PROVISIONING"
+
+
+def delete_instance(project: str, zone: str, name: str) -> None:
+    """Delete an instance. Blocking. No-op if it does not exist."""
+    try:
+        from google.cloud import compute_v1
+    except ImportError as exc:  # pragma: no cover
+        raise GcpError("google-cloud-compute not installed") from exc
+    client = compute_v1.InstancesClient()
+    if instance_status(project, zone, name) is None:
+        return
+    client.delete(project=project, zone=zone, instance=name).result()

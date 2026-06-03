@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MetricLens AI — 소개자료</title>
+<style>
+  :root {
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#2a3140;
+    --text:#c9d1d9; --dim:#8b949e; --accent:#4f9cff; --good:#3fb950; --warn:#d29922; --white:#f0f6fc;
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; background:var(--bg); color:var(--text);
+    font-family:'Segoe UI','Malgun Gothic',system-ui,-apple-system,Roboto,sans-serif; line-height:1.6; }
+  a { color:var(--accent); }
+  .wrap { max-width:1040px; margin:0 auto; padding:40px 24px 64px; }
+  .topbar { display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--dim); margin-bottom:30px; }
+  .topbar a { text-decoration:none; }
+  .hero h1 { font-size:clamp(32px,6vw,58px); color:var(--white); margin:0 0 10px; }
+  .hero .tag { font-size:clamp(17px,2.4vw,24px); color:var(--accent); font-weight:600; margin:0 0 14px; }
+  .hero p { font-size:clamp(15px,1.8vw,19px); color:var(--text); max-width:760px; }
+  .kicker { color:var(--accent); font-size:13px; font-weight:700; letter-spacing:.12em;
+    text-transform:uppercase; margin:38px 0 14px; }
+  .ctas { margin:22px 0 6px; }
+  .cta { display:inline-flex; align-items:center; gap:8px; margin:6px 10px 6px 0;
+    background:var(--accent); color:#04121f; font-weight:700; text-decoration:none;
+    padding:12px 20px; border-radius:10px; font-size:16px; }
+  .cta.ghost { background:transparent; color:var(--accent); border:1px solid var(--accent); }
+  .grid { display:grid; gap:16px; }
+  .g3 { grid-template-columns:repeat(3,1fr); }
+  .g2 { grid-template-columns:repeat(2,1fr); }
+  @media (max-width:780px){ .g3,.g2{ grid-template-columns:1fr; } }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:18px 20px; }
+  .card h3 { margin:0 0 8px; color:var(--white); font-size:18px; }
+  .card p { margin:0; font-size:15px; color:var(--text); }
+  .card .n { color:var(--accent); font-weight:700; }
+  .step b { color:var(--white); }
+  .stat { display:flex; gap:16px; flex-wrap:wrap; }
+  .stat div { background:linear-gradient(160deg,var(--panel2),var(--panel));
+    border:1px solid var(--border); border-radius:12px; padding:16px 20px; min-width:150px; flex:1; }
+  .stat b { display:block; font-size:30px; color:var(--white); }
+  .stat span { color:var(--dim); font-size:13px; }
+  .chips { display:flex; flex-wrap:wrap; gap:10px; }
+  .chip { background:var(--panel2); border:1px solid rgba(79,156,255,.4); border-radius:999px;
+    padding:8px 15px; font-size:14px; color:var(--accent); }
+  .formula { font-family:Consolas,monospace; background:var(--panel2); border:1px solid var(--border);
+    border-radius:8px; padding:14px 18px; display:inline-block; color:var(--white); font-size:clamp(14px,1.8vw,19px); }
+  .formula .hi { color:var(--accent); }
+  figure { margin:18px 0 0; text-align:center; }
+  figure img { max-width:100%; border-radius:10px; border:1px solid var(--border); background:#fff; }
+  figcaption { color:var(--dim); font-size:13px; margin-top:8px; }
+  .muted { color:var(--dim); }
+  .foot { margin-top:46px; padding-top:20px; border-top:1px solid var(--border); color:var(--dim); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div>◧ MetricLens AI · Team 구글링</div>
+    <div><a href="presentation_kr.html">📊 발표자료</a> &nbsp;·&nbsp; <a href="intro.html">English</a></div>
+  </div>
+
+  <section class="hero">
+    <h1>MetricLens AI</h1>
+    <p class="tag">서버 부하를 예측하고, SLO를 깨지 않는 최소 자원을 산출한다</p>
+    <p>경량 시계열 모델로 서버의 CPU·메모리 부하를 예측하고, 정수계획법으로 SLO(서비스 목표)를
+      보장하는 최소 자원 구성을 계산하는 리사이징 최적화 플랫폼이다. GPU 없이 CPU만으로 동작하며,
+      외부로 데이터를 보내지 않아 망분리·규제 온프레미스 환경에서도 자립적으로 쓸 수 있다.</p>
+    <div class="ctas">
+      <a class="cta" href="https://metriclens-frontend-f2ei3uwvfq-uc.a.run.app" target="_blank">🖥️ 라이브 대시보드</a>
+      <a class="cta ghost" href="https://metriclens-backend-f2ei3uwvfq-uc.a.run.app/docs" target="_blank">🔌 API (Swagger)</a>
+      <a class="cta ghost" href="presentation_kr.html">📊 발표자료(슬라이드)</a>
+    </div>
+  </section>
+
+  <div class="kicker">해결하는 문제</div>
+  <div class="grid g3">
+    <div class="card"><h3>과프로비저닝</h3><p>Azure 트레이스(SOSP'17) 기준 <span class="n">VM의 약 60%가 평균 CPU 20% 미만</span>.
+      할당 자원의 대부분이 유휴 상태로 비용·전력을 낭비한다.</p></div>
+    <div class="card"><h3>도구의 공백</h3><p>퍼블릭 클라우드 옵티마이저는 텔레메트리를 외부로 보내야 해
+      <span class="n">망분리 환경에서 사용 불가</span>. 온프레 모니터는 사후 리포팅에 그친다.</p></div>
+    <div class="card"><h3>우리의 답</h3><p>외부 의존성·GPU 없이 데이터에 근거해
+      <span class="n">"얼마나 줄여도 SLO를 지키는지"</span>를 정량 산출한다.</p></div>
+  </div>
+
+  <div class="kicker">동작 원리 (4단계)</div>
+  <div class="grid g2">
+    <div class="card step"><h3>① 예측</h3><p>계절-추세 분해 + <b>AR(1) 잔차 보정</b>으로 미래 부하와
+      95% 예측구간을 추정한다. 표준 라이브러리만 사용하는 화이트박스 모델.</p></div>
+    <div class="card step"><h3>② 강건 피크 (p95)</h3><p>최댓값 대신 <b>p95</b>를 피크로 사용해
+      단발 스파이크로 인한 과다 할당을 막는다.</p></div>
+    <div class="card step"><h3>③ 정수계획 최적화</h3><p>헤드룸 제약 하에서
+      <b>최소 정수 할당</b>을 전수 열거로 정확히 푼다(vCPU 정수·메모리 256MB 블록).</p></div>
+    <div class="card step"><h3>④ 리사이즈 + 감사</h3><p>GCP 머신타입에 매핑해 <b>실제 인스턴스를 리사이즈</b>하고
+      모든 결정을 감사 로그로 영속 기록한다.</p></div>
+  </div>
+  <div style="margin-top:16px">
+    <span class="formula">peak<sub>p95</sub> · <span class="hi">safety_margin</span> ≤ <span class="hi">target_util</span> · allocation</span>
+    <p class="muted" style="margin-top:8px">핵심 제약식 — 이를 만족하는 가장 작은 정수 할당이 곧 SLO를 지키는 최소 비용 구성이다.</p>
+  </div>
+
+  <div class="kicker">검증된 결과</div>
+  <div class="stat">
+    <div><b class="n">6 / 6</b><span>seasonal-naive 능가 (RMSE)</span></div>
+    <div><b class="n">5 / 6</b><span>MASE &lt; 1 (스케일 불변 우수)</span></div>
+    <div><b class="n">4 / 6</b><span>DM 검정 p&lt;0.05 유의</span></div>
+    <div><b class="n">0.93–0.98</b><span>예측구간 커버리지 PICP</span></div>
+  </div>
+  <p class="muted" style="margin-top:10px">MASE·Diebold–Mariano 검정·PICP/MPIW로 논문 수준 평가.
+    데이터는 Azure·Alibaba·Barroso &amp; Hölzle 트레이스에 정렬된 합성 워크로드(6종 아키타입).</p>
+
+  <div class="kicker">실제 GCP 연동</div>
+  <div class="grid g3">
+    <div class="card"><h3>실측 모니터링</h3><p>Cloud Monitoring으로 실제 인스턴스의 CPU·메모리를 적재.</p></div>
+    <div class="card"><h3>실제 리사이즈</h3><p>Compute Engine API로 머신 타입을 실제 변경(stop→change→start).</p></div>
+    <div class="card"><h3>안전장치</h3><p><span class="n">월 ₩300k 예산 가드</span> + 보호 인스턴스 denylist.</p></div>
+  </div>
+
+  <div class="kicker">차별점</div>
+  <div class="chips">
+    <span class="chip">🔒 에어갭/온프레 자립형</span>
+    <span class="chip">🪶 GPU-프리 경량</span>
+    <span class="chip">🎯 SLO 제약 처방적 정수계획</span>
+    <span class="chip">🔍 화이트박스 설명가능성</span>
+    <span class="chip">🧾 감사 추적</span>
+    <span class="chip">🧩 인프라 비종속 (VM/베어메탈)</span>
+  </div>
+
+  <div class="kicker">시스템 아키텍처</div>
+  <figure>
+    <img src="slides/architecture_kr.png" alt="architecture" />
+    <figcaption>표현·업무·데이터 3계층 레이어드 + 횡단 배포 인프라(런타임 플랫폼 / CI/CD 분리), GCP 네이티브.</figcaption>
+  </figure>
+
+  <div class="foot">
+    MetricLens AI · Team 구글링 (팀장 이용원 · 서한녕 · 송심우) ·
+    저장소 github.com/iamywl/googai_congress ·
+    <a href="presentation_kr.html">발표자료 슬라이드 보기 →</a>
+  </div>
+
+</div>
+</body>
+</html>

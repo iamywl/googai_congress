@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MetricLens AI — Brief</title>
+<style>
+  :root {
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#2a3140;
+    --text:#c9d1d9; --dim:#8b949e; --accent:#4f9cff; --good:#3fb950; --warn:#d29922; --white:#f0f6fc;
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; background:var(--bg); color:var(--text);
+    font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif; line-height:1.6; }
+  a { color:var(--accent); }
+  .wrap { max-width:1040px; margin:0 auto; padding:40px 24px 64px; }
+  .topbar { display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--dim); margin-bottom:30px; }
+  .topbar a { text-decoration:none; }
+  .hero h1 { font-size:clamp(32px,6vw,58px); color:var(--white); margin:0 0 10px; }
+  .hero .tag { font-size:clamp(17px,2.4vw,24px); color:var(--accent); font-weight:600; margin:0 0 14px; }
+  .hero p { font-size:clamp(15px,1.8vw,19px); color:var(--text); max-width:760px; }
+  .kicker { color:var(--accent); font-size:13px; font-weight:700; letter-spacing:.12em;
+    text-transform:uppercase; margin:38px 0 14px; }
+  .ctas { margin:22px 0 6px; }
+  .cta { display:inline-flex; align-items:center; gap:8px; margin:6px 10px 6px 0;
+    background:var(--accent); color:#04121f; font-weight:700; text-decoration:none;
+    padding:12px 20px; border-radius:10px; font-size:16px; }
+  .cta.ghost { background:transparent; color:var(--accent); border:1px solid var(--accent); }
+  .grid { display:grid; gap:16px; }
+  .g3 { grid-template-columns:repeat(3,1fr); }
+  .g2 { grid-template-columns:repeat(2,1fr); }
+  @media (max-width:780px){ .g3,.g2{ grid-template-columns:1fr; } }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:18px 20px; }
+  .card h3 { margin:0 0 8px; color:var(--white); font-size:18px; }
+  .card p { margin:0; font-size:15px; color:var(--text); }
+  .card .n { color:var(--accent); font-weight:700; }
+  .step b { color:var(--white); }
+  .stat { display:flex; gap:16px; flex-wrap:wrap; }
+  .stat div { background:linear-gradient(160deg,var(--panel2),var(--panel));
+    border:1px solid var(--border); border-radius:12px; padding:16px 20px; min-width:150px; flex:1; }
+  .stat b { display:block; font-size:30px; color:var(--white); }
+  .stat span { color:var(--dim); font-size:13px; }
+  .chips { display:flex; flex-wrap:wrap; gap:10px; }
+  .chip { background:var(--panel2); border:1px solid rgba(79,156,255,.4); border-radius:999px;
+    padding:8px 15px; font-size:14px; color:var(--accent); }
+  .formula { font-family:Consolas,monospace; background:var(--panel2); border:1px solid var(--border);
+    border-radius:8px; padding:14px 18px; display:inline-block; color:var(--white); font-size:clamp(14px,1.8vw,19px); }
+  .formula .hi { color:var(--accent); }
+  figure { margin:18px 0 0; text-align:center; }
+  figure img { max-width:100%; border-radius:10px; border:1px solid var(--border); background:#fff; }
+  figcaption { color:var(--dim); font-size:13px; margin-top:8px; }
+  .muted { color:var(--dim); }
+  .foot { margin-top:46px; padding-top:20px; border-top:1px solid var(--border); color:var(--dim); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div>◧ MetricLens AI · Team Googling</div>
+    <div><a href="presentation.html">📊 Presentation</a> &nbsp;·&nbsp; <a href="intro_kr.html">한국어</a></div>
+  </div>
+
+  <section class="hero">
+    <h1>MetricLens AI</h1>
+    <p class="tag">Forecast server load, compute the smallest resources that keep the SLO</p>
+    <p>A rightsizing-optimization platform that forecasts CPU·memory load with a lightweight time-series model
+      and computes, via integer programming, the smallest allocation that preserves the SLO. It runs on CPUs
+      alone (no GPU) and never sends data off-site, so it works self-contained in air-gapped / regulated
+      on-premises environments.</p>
+    <div class="ctas">
+      <a class="cta" href="https://metriclens-frontend-f2ei3uwvfq-uc.a.run.app" target="_blank">🖥️ Live dashboard</a>
+      <a class="cta ghost" href="https://metriclens-backend-f2ei3uwvfq-uc.a.run.app/docs" target="_blank">🔌 API (Swagger)</a>
+      <a class="cta ghost" href="presentation.html">📊 Presentation (slides)</a>
+    </div>
+  </section>
+
+  <div class="kicker">The problem we solve</div>
+  <div class="grid g3">
+    <div class="card"><h3>Over-provisioning</h3><p>Per the Azure trace (SOSP'17), <span class="n">~60% of VMs average under 20% CPU</span>.
+      Most allocated capacity sits idle, wasting cost and power.</p></div>
+    <div class="card"><h3>A tooling gap</h3><p>Public-cloud optimizers must send telemetry off-site, so they are
+      <span class="n">unusable in air-gapped environments</span>. On-prem monitors stop at reporting.</p></div>
+    <div class="card"><h3>Our answer</h3><p>With no external dependency and no GPU, quantify
+      <span class="n">"how much can we cut and still keep the SLO"</span> from the data.</p></div>
+  </div>
+
+  <div class="kicker">How it works (4 stages)</div>
+  <div class="grid g2">
+    <div class="card step"><h3>① Forecast</h3><p>Seasonal-trend decomposition + <b>AR(1) residual correction</b>
+      estimate future load and a 95% prediction interval. A white-box model using the standard library only.</p></div>
+    <div class="card step"><h3>② Robust peak (p95)</h3><p>Use the <b>p95</b> as the peak instead of the max,
+      preventing over-provisioning caused by lone spikes.</p></div>
+    <div class="card step"><h3>③ Integer-program optimization</h3><p>Solve exactly, by exhaustive enumeration, for the
+      <b>smallest integer allocation</b> under the headroom constraint (integer vCPU, 256 MB memory blocks).</p></div>
+    <div class="card step"><h3>④ Resize + audit</h3><p>Map to a GCP machine type, <b>resize the real instance</b>,
+      and persist every decision to an audit log.</p></div>
+  </div>
+  <div style="margin-top:16px">
+    <span class="formula">peak<sub>p95</sub> · <span class="hi">safety_margin</span> ≤ <span class="hi">target_util</span> · allocation</span>
+    <p class="muted" style="margin-top:8px">The core constraint — the smallest integer allocation that satisfies it is the minimum-cost configuration that keeps the SLO.</p>
+  </div>
+
+  <div class="kicker">Validated results</div>
+  <div class="stat">
+    <div><b class="n">6 / 6</b><span>beats seasonal-naive (RMSE)</span></div>
+    <div><b class="n">5 / 6</b><span>MASE &lt; 1 (scale-free win)</span></div>
+    <div><b class="n">4 / 6</b><span>DM test p&lt;0.05 significant</span></div>
+    <div><b class="n">0.93–0.98</b><span>interval coverage PICP</span></div>
+  </div>
+  <p class="muted" style="margin-top:10px">Paper-grade evaluation with MASE · Diebold–Mariano test · PICP/MPIW.
+    Data is a synthetic workload (6 archetypes) aligned to Azure · Alibaba · Barroso &amp; Hölzle traces.</p>
+
+  <div class="kicker">Real GCP integration</div>
+  <div class="grid g3">
+    <div class="card"><h3>Live monitoring</h3><p>Cloud Monitoring ingests CPU·memory from real instances.</p></div>
+    <div class="card"><h3>Real resize</h3><p>The Compute Engine API changes machine types for real (stop→change→start).</p></div>
+    <div class="card"><h3>Safety</h3><p>A <span class="n">₩300k/month budget guard</span> + a protected-instance denylist.</p></div>
+  </div>
+
+  <div class="kicker">Differentiation</div>
+  <div class="chips">
+    <span class="chip">🔒 Air-gapped / on-prem self-contained</span>
+    <span class="chip">🪶 GPU-free, lightweight</span>
+    <span class="chip">🎯 SLO-constrained prescriptive IP</span>
+    <span class="chip">🔍 White-box explainability</span>
+    <span class="chip">🧾 Audit trail</span>
+    <span class="chip">🧩 Infra-agnostic (VM / bare metal)</span>
+  </div>
+
+  <div class="kicker">System architecture</div>
+  <figure>
+    <img src="slides/architecture.png" alt="architecture" />
+    <figcaption>Presentation·Business·Data three-layer + cross-cutting deployment infra (runtime platform / CI/CD split out), GCP-native.</figcaption>
+  </figure>
+
+  <div class="foot">
+    MetricLens AI · Team Googling (Lead Yongwon Lee · Hannyeong Seo · Simu Song) ·
+    repo github.com/iamywl/googai_congress ·
+    <a href="presentation.html">view the presentation slides →</a>
+  </div>
+
+</div>
+</body>
+</html>

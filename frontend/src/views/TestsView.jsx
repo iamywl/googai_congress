@@ -3,11 +3,14 @@ import {
   applyRealResize,
   applyResize,
   checkHealth,
+  deleteTestNode,
   fetchEvaluation,
   fetchForecast,
   fetchRecommendation,
+  launchTestNode,
   originalSizeFor,
   syncGcp,
+  testNodeStatus,
 } from '../api.js';
 import InfoTip from '../components/InfoTip.jsx';
 import { glossary } from '../glossary.js';
@@ -37,6 +40,59 @@ export default function TestsView({ hosts, onChanged }) {
   }
 
   const scenarios = [
+    {
+      id: 'scaleout',
+      label: L('🚀 Scale out: launch test node', '🚀 스케일아웃: 테스트 노드 생성'),
+      desc: L('Creates a real e2-micro GCE instance on demand and verifies it reaches RUNNING (budget-guarded).',
+        '실제 e2-micro GCE 인스턴스를 즉석 생성하고 RUNNING 도달을 확인합니다(예산 가드).'),
+      fn: async () => {
+        const created = await launchTestNode();
+        let st = created;
+        for (let i = 0; i < 6 && st.status !== 'RUNNING'; i += 1) {
+          await new Promise((r) => setTimeout(r, 4000));
+          st = await testNodeStatus();
+        }
+        return {
+          title: L('Test node launched', '테스트 노드 생성됨'),
+          rows: [
+            { label: created.name, value: `${created.machine_type} · ${created.zone}`, ok: true },
+            { label: L('status', '상태'), value: st.status || 'UNKNOWN', ok: st.status === 'RUNNING' },
+          ],
+          note: st.status === 'RUNNING'
+            ? L('Verified RUNNING on the Compute API. Run "Sync real GCP fleet" to monitor it.',
+                'Compute API에서 RUNNING 확인됨. "실제 GCP 플릿 동기화"로 모니터링하세요.')
+            : L('Still starting — click "Verify test node" again shortly.',
+                '아직 시작 중 — 잠시 후 "테스트 노드 확인"을 다시 누르세요.'),
+        };
+      },
+    },
+    {
+      id: 'verifynode',
+      label: L('✅ Verify test node', '✅ 테스트 노드 확인'),
+      desc: L('Checks the live status of the test node via the Compute API.',
+        'Compute API로 테스트 노드의 실시간 상태를 확인합니다.'),
+      fn: async () => {
+        const st = await testNodeStatus();
+        return {
+          title: L('Test node status', '테스트 노드 상태'),
+          rows: [{ label: st.name, value: st.exists ? st.status : L('not found', '없음'), ok: st.running }],
+          note: st.running ? L('Running.', '실행 중.') : L('Not running.', '실행 중 아님.'),
+        };
+      },
+    },
+    {
+      id: 'delnode',
+      label: L('🗑 Delete test node', '🗑 테스트 노드 삭제'),
+      desc: L('Tears down the on-demand test instance.', '즉석 테스트 인스턴스를 삭제합니다.'),
+      fn: async () => {
+        const r = await deleteTestNode();
+        return {
+          title: L('Test node deleted', '테스트 노드 삭제됨'),
+          rows: [{ label: r.name, value: 'deleted', ok: true }],
+          note: L('Instance removed; billing for it stops.', '인스턴스 제거됨, 해당 과금 중단.'),
+        };
+      },
+    },
     {
       id: 'health',
       label: L('🩺 Health check', '🩺 헬스 체크'),

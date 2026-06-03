@@ -11,7 +11,8 @@ const STR = {
               ko: '시계열 부하 예측 · 리사이징 최적화' },
   live: { en: '● live', ko: '● 라이브' },
   demo: { en: '● demo data', ko: '● 데모 데이터' },
-  slides: { en: '📊 Slides', ko: '📊 소개자료' },
+  slides: { en: '📊 Slides', ko: '📊 발표자료' },
+  brief: { en: '📄 Brief', ko: '📄 소개자료' },
   footer: { en: 'MetricLens AI · CPU-only forecasting · target MAPE ≤ 15% · SLO 99.9%',
             ko: 'MetricLens AI · CPU-온리 예측 · 목표 MAPE ≤ 15% · SLO 99.9%' },
 

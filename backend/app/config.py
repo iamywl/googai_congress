@@ -34,6 +34,7 @@ class Settings(BaseSettings):
 
     # Real GCP fleet integration (Cloud Monitoring ingestion + real resize).
     gcp_project: str = "knudc-yoonwoodev"
+    gcp_zone: str = "us-central1-a"       # zone for on-demand test nodes
     gcp_label: str = "metriclens"        # instance label that marks our fleet
     gcp_sync_hours: int = 24             # how much CPU history to pull per sync
     monthly_budget_krw: float = 300_000  # hard ceiling for a real resize

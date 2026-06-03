@@ -23,6 +23,10 @@ def _protected() -> set[str]:
     return {n.strip() for n in settings.gcp_protected_instances.split(",") if n.strip()}
 
 
+TESTNODE_NAME = "ml-testnode"
+TESTNODE_MACHINE = "e2-micro"
+
+
 class GcpSyncService:
     def __init__(
         self,
@@ -33,6 +37,30 @@ class GcpSyncService:
         self.hosts = hosts
         self.metrics = metrics
         self.actions = actions
+
+    # ---- On-demand scale-out test node (demo only) --------------------------
+    def launch_test_node(self) -> dict:
+        """Create a small labelled test instance and return its live status."""
+        if not gcp.within_budget(
+            TESTNODE_MACHINE, settings.monthly_budget_krw, settings.krw_per_usd
+        ):
+            raise BudgetExceededError(TESTNODE_MACHINE)
+        status = gcp.create_instance(
+            settings.gcp_project, settings.gcp_zone, TESTNODE_NAME,
+            TESTNODE_MACHINE, settings.gcp_label,
+        )
+        return {"name": TESTNODE_NAME, "zone": settings.gcp_zone,
+                "machine_type": TESTNODE_MACHINE, "status": status}
+
+    def test_node_status(self) -> dict:
+        status = gcp.instance_status(settings.gcp_project, settings.gcp_zone, TESTNODE_NAME)
+        return {"name": TESTNODE_NAME, "zone": settings.gcp_zone,
+                "machine_type": TESTNODE_MACHINE, "status": status,
+                "running": status == "RUNNING", "exists": status is not None}
+
+    def delete_test_node(self) -> dict:
+        gcp.delete_instance(settings.gcp_project, settings.gcp_zone, TESTNODE_NAME)
+        return {"name": TESTNODE_NAME, "deleted": True}
 
     async def list_instances(self) -> list[gcp.GceInstance]:
         return gcp.list_instances(settings.gcp_project, settings.gcp_label)

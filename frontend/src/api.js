@@ -293,6 +293,20 @@ export async function fetchGcpInstances() {
   }
 }
 
+// --- On-demand scale-out test node (demo) ---
+async function gcpAction(path, method) {
+  const resp = await fetch(`${BASE_URL}${path}`, { method });
+  if (!resp.ok) {
+    let detail = `HTTP ${resp.status}`;
+    try { detail = (await resp.json()).detail || detail; } catch { /* ignore */ }
+    throw new Error(detail);
+  }
+  return resp.json();
+}
+export const launchTestNode = () => gcpAction('/api/v1/gcp/testnode', 'POST');
+export const testNodeStatus = () => gcpAction('/api/v1/gcp/testnode', 'GET');
+export const deleteTestNode = () => gcpAction('/api/v1/gcp/testnode', 'DELETE');
+
 // Resize the real GCE VM behind a host. Surfaces the backend's error detail
 // (e.g. budget-guard 402) as the thrown message.
 export async function applyRealResize(host, machineType) {

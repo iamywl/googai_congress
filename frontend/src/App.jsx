@@ -150,6 +150,10 @@ export default function App() {
              target="_blank" rel="noreferrer">
             {t('slides')}
           </a>
+          <a className="deck-link" href={lang === 'ko' ? '/intro_kr.html' : '/intro.html'}
+             target="_blank" rel="noreferrer">
+            {t('brief')}
+          </a>
           <span className={`badge ${live ? 'live' : 'demo'}`}>
             {live ? t('live') : t('demo')}
           </span>

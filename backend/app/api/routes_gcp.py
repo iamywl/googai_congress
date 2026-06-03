@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel
 
@@ -22,6 +24,47 @@ class InstanceOut(BaseModel):
     vcpu: int
     memory_mb: int
     monthly_cost_krw: float
+
+
+class TestNodeOut(BaseModel):
+    name: str
+    zone: str | None = None
+    machine_type: str | None = None
+    status: str | None = None
+    running: bool | None = None
+    exists: bool | None = None
+    deleted: bool | None = None
+
+
+async def _gcp_guard(fn):
+    try:
+        return await asyncio.to_thread(fn)
+    except BudgetExceededError as exc:
+        raise HTTPException(
+            status.HTTP_402_PAYMENT_REQUIRED,
+            f"'{exc}' exceeds the monthly budget ceiling "
+            f"({settings.monthly_budget_krw:,.0f} KRW).",
+        ) from exc
+    except gcp.GcpError as exc:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc)) from exc
+
+
+@router.post("/testnode", response_model=TestNodeOut)
+async def launch_test_node(service: GcpSyncServiceDep) -> TestNodeOut:
+    """Scale out: create a small on-demand test instance (demo). Idempotent."""
+    return TestNodeOut(**(await _gcp_guard(service.launch_test_node)))
+
+
+@router.get("/testnode", response_model=TestNodeOut)
+async def test_node_status(service: GcpSyncServiceDep) -> TestNodeOut:
+    """Verify the test node actually runs (live status from the Compute API)."""
+    return TestNodeOut(**(await _gcp_guard(service.test_node_status)))
+
+
+@router.delete("/testnode", response_model=TestNodeOut)
+async def delete_test_node(service: GcpSyncServiceDep) -> TestNodeOut:
+    """Tear down the on-demand test instance."""
+    return TestNodeOut(**(await _gcp_guard(service.delete_test_node)))
 
 
 @router.get("/instances", response_model=list[InstanceOut])
