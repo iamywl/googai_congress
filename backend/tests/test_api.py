@@ -132,3 +132,18 @@ def test_resize_validation(client: TestClient, seeded_host: dict):
         json={"vcpu_count": 0, "memory_mb": 16384},
     )
     assert resp.status_code == 422
+
+
+def test_fleet_wide_actions_feed(client: TestClient, seeded_host: dict):
+    hid = seeded_host["id"]
+    # Generate one action of each kind, then read the global feed.
+    client.post(f"/api/v1/hosts/{hid}/forecast")
+    client.post(f"/api/v1/hosts/{hid}/resize", json={"vcpu_count": 8, "memory_mb": 8192})
+    resp = client.get("/api/v1/actions")
+    assert resp.status_code == 200
+    feed = resp.json()
+    assert len(feed) >= 2
+    kinds = {a["action_type"] for a in feed}
+    assert {"FORECAST", "RESIZE"} <= kinds
+    # limit is honoured
+    assert len(client.get("/api/v1/actions?limit=1").json()) == 1

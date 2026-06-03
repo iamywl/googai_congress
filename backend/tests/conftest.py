@@ -80,6 +80,9 @@ class FakeActionRepository:
         rows = [a for a in self.store if a.host_id == host_id]
         return sorted(rows, key=lambda a: a.ts, reverse=True)[:limit]
 
+    async def list_all(self, limit: int = 200) -> list[Action]:
+        return sorted(self.store, key=lambda a: a.ts, reverse=True)[:limit]
+
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:

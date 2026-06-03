@@ -108,6 +108,10 @@ class HostService:
         await self.get_host(host_id)
         return await self.actions.list_by_host(host_id)
 
+    async def list_all_actions(self, limit: int = 200) -> list[Action]:
+        """Fleet-wide audit log (most recent first) for the history view."""
+        return await self.actions.list_all(limit)
+
 
 class MetricService:
     def __init__(self, hosts: HostRepository, metrics: MetricRepository) -> None:

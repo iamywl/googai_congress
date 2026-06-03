@@ -13,7 +13,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-from .api import routes_analysis, routes_catalog, routes_hosts, routes_metrics
+from .api import (
+    routes_analysis,
+    routes_catalog,
+    routes_history,
+    routes_hosts,
+    routes_metrics,
+)
 from .config import settings
 from .db import get_session
 
@@ -55,6 +61,7 @@ app.include_router(routes_hosts.router)
 app.include_router(routes_metrics.router)
 app.include_router(routes_analysis.router)
 app.include_router(routes_catalog.router)
+app.include_router(routes_history.router)
 
 
 @app.get("/", tags=["Meta"])

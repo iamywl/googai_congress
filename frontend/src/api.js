@@ -225,3 +225,39 @@ export async function fetchActions(host) {
     return { actions: demoActions[host.id] || [], live: false };
   }
 }
+
+// Fleet-wide audit log across every host (newest first) — for the History view.
+export async function fetchAllActions(limit = 200) {
+  try {
+    const actions = await tryFetch(`/api/v1/actions?limit=${limit}`);
+    return { actions, live: true };
+  } catch {
+    const merged = Object.values(demoActions).flat();
+    merged.sort((a, b) => (a.ts < b.ts ? 1 : -1));
+    return { actions: merged.slice(0, limit), live: false };
+  }
+}
+
+// Liveness/readiness probe used by the Test Scenarios view.
+export async function checkHealth() {
+  const probe = async (path) => {
+    const t0 = Date.now();
+    try {
+      const r = await fetch(`${BASE_URL}${path}`);
+      return { ok: r.ok, status: r.status, ms: Date.now() - t0 };
+    } catch {
+      return { ok: false, status: 0, ms: Date.now() - t0 };
+    }
+  };
+  if (!BASE_URL) {
+    return { live: false, health: { ok: true, status: 200, ms: 0 }, db: { ok: true, status: 200, ms: 0 } };
+  }
+  const [health, db] = await Promise.all([probe('/health'), probe('/health/db')]);
+  return { live: true, health, db };
+}
+
+// Original (seed) size for a hostname, used by the "reset fleet" scenario.
+export function originalSizeFor(hostname) {
+  const h = SAMPLE_HOSTS.find((s) => s.hostname === hostname);
+  return h ? { vcpu_count: h.vcpu_count, memory_mb: h.memory_mb } : null;
+}

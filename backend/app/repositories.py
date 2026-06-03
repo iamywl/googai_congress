@@ -104,3 +104,10 @@ class ActionRepository:
             .limit(limit)
         )
         return list(result.scalars().all())
+
+    async def list_all(self, limit: int = 200) -> list[Action]:
+        """Every host's actions, most recent first — for the history view."""
+        result = await self.session.execute(
+            select(Action).order_by(Action.ts.desc()).limit(limit)
+        )
+        return list(result.scalars().all())

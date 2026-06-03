@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   applyResize,
   fetchActions,
@@ -17,6 +17,9 @@ import Gauge from './components/Gauge.jsx';
 import ResizeControls from './components/ResizeControls.jsx';
 import ActivityLog from './components/ActivityLog.jsx';
 import InfoTip from './components/InfoTip.jsx';
+import NavBar from './components/NavBar.jsx';
+import HistoryView from './views/HistoryView.jsx';
+import TestsView from './views/TestsView.jsx';
 import { GLOSSARY } from './glossary.js';
 import './App.css';
 
@@ -32,6 +35,7 @@ export default function App() {
   const [live, setLive] = useState(true);
   const [busy, setBusy] = useState(false);
   const [baseline, setBaseline] = useState(1);
+  const [view, setView] = useState('dashboard');
 
   // Capacity at which each host's metrics were measured, so projected
   // utilisation can be recomputed as the allocation is resized. Written/read
@@ -42,20 +46,29 @@ export default function App() {
     fetchMachineTypes().then(({ types }) => setMachineTypes(types));
   }, []);
 
-  useEffect(() => {
-    fetchHosts().then(({ hosts: list, live: isLive }) => {
-      setHosts(list);
-      setLive(isLive);
-      list.forEach((h) => {
-        baselines.current[h.id] ??= h.vcpu_count;
-      });
-      const lead = list.find((h) => h.environment === 'PROD') || list[0];
-      if (lead) setSelected(lead);
-      Promise.all(list.map((h) => fetchRecommendation(h))).then((results) =>
-        setFleet(list.map((h, i) => ({ host: h, rec: results[i].recommendation }))),
-      );
+  // Load (or reload) the fleet — preserving the current selection across the
+  // mutations a Test Scenario may apply.
+  const loadFleet = useCallback(async () => {
+    const { hosts: list, live: isLive } = await fetchHosts();
+    setHosts(list);
+    setLive(isLive);
+    list.forEach((h) => {
+      baselines.current[h.id] ??= h.vcpu_count;
     });
+    setSelected((cur) => {
+      const same = cur && list.find((h) => h.id === cur.id);
+      return same || list.find((h) => h.environment === 'PROD') || list[0] || null;
+    });
+    const results = await Promise.all(list.map((h) => fetchRecommendation(h)));
+    setFleet(list.map((h, i) => ({ host: h, rec: results[i].recommendation })));
   }, []);
+
+  useEffect(() => {
+    // loadFleet only sets state after awaiting fetches (never synchronously),
+    // so the cascading-render heuristic does not apply here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadFleet();
+  }, [loadFleet]);
 
   useEffect(() => {
     if (!selected) return;
@@ -130,9 +143,16 @@ export default function App() {
         </span>
       </header>
 
-      {fleet.length > 0 && <KpiStrip fleet={fleet} />}
+      <NavBar view={view} onChange={setView} />
 
-      <nav className="host-tabs">
+      {view === 'history' && <HistoryView hosts={hosts} />}
+      {view === 'tests' && <TestsView hosts={hosts} onChanged={loadFleet} />}
+
+      {view === 'dashboard' && (
+        <>
+          {fleet.length > 0 && <KpiStrip fleet={fleet} />}
+
+          <nav className="host-tabs">
         {hosts.map((h) => (
           <button
             key={h.id}
@@ -203,6 +223,8 @@ export default function App() {
           <ActivityLog actions={actions} />
         </aside>
       </main>
+        </>
+      )}
 
       <footer className="footer">
         MetricLens AI · lightweight CPU-only forecasting · target MAPE ≤ 15% ·
