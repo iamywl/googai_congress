@@ -45,3 +45,4 @@ PROJECT_ID=knudc-yoonwoodev \
 자세한 설계·테스트·스크린샷은 [개발 완료 보고서](docs/development_report.md) 참조.
 # googai_congress
 # googai_congress
+# googai_congress
