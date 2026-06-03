@@ -61,6 +61,13 @@ class GcpSyncService:
             series = gcp.fetch_cpu_series(
                 settings.gcp_project, inst.instance_id, settings.gcp_sync_hours
             )
+            # Real memory via the Ops Agent (empty until the agent reports); keyed
+            # by aligned timestamp so it can be matched to each CPU sample.
+            mem_series = gcp.fetch_mem_series(
+                settings.gcp_project, inst.instance_id, settings.gcp_sync_hours
+            )
+            mem_by_ts = {ts.replace(tzinfo=None): val for ts, val in mem_series}
+
             existing = {m.ts for m in await self.metrics.list_by_host(host.id)}
             rows = []
             for ts, cpu in series:
@@ -70,9 +77,13 @@ class GcpSyncService:
                 # Shared-core (e2) instances can momentarily report utilisation
                 # above 100% during a burst; clamp to the metric's valid range.
                 cpu = max(0.0, min(100.0, cpu))
-                # Memory is unmonitored without the Ops Agent; store a CPU-linked
-                # proxy so recommendations stay sensible (documented limitation).
-                mem = max(0.0, min(95.0, round(cpu * 0.6 + 20.0, 2)))
+                # Prefer the real Ops Agent memory reading; fall back to a
+                # CPU-linked proxy when the agent has not reported for this slot.
+                real_mem = mem_by_ts.get(naive)
+                if real_mem is not None:
+                    mem = max(0.0, min(100.0, round(real_mem, 2)))
+                else:
+                    mem = max(0.0, min(95.0, round(cpu * 0.6 + 20.0, 2)))
                 rows.append(Metric(
                     host_id=host.id, ts=naive, cpu_pct=cpu, mem_pct=mem,
                     net_in_kbps=0, net_out_kbps=0,

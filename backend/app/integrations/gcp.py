@@ -139,6 +139,56 @@ def fetch_cpu_series(
     return points
 
 
+def fetch_mem_series(
+    project: str, instance_id: str, hours: int, align_minutes: int = 60
+) -> list[tuple[datetime, float]]:
+    """Mean used-memory (%) per ``align_minutes``; requires the Ops Agent.
+
+    Returns an empty list if the agent metric is not present yet (no agent /
+    not enough history), so callers fall back to a proxy.
+    """
+    try:
+        from google.cloud import monitoring_v3
+    except ImportError as exc:  # pragma: no cover
+        raise GcpError("google-cloud-monitoring not installed") from exc
+
+    client = monitoring_v3.MetricServiceClient()
+    now = datetime.now(UTC)
+    interval = monitoring_v3.TimeInterval(
+        end_time=now, start_time=now - timedelta(hours=hours)
+    )
+    aggregation = monitoring_v3.Aggregation(
+        alignment_period={"seconds": align_minutes * 60},
+        per_series_aligner=monitoring_v3.Aggregation.Aligner.ALIGN_MEAN,
+    )
+    flt = (
+        'metric.type="agent.googleapis.com/memory/percent_used" '
+        'AND metric.labels.state="used" '
+        f'AND resource.labels.instance_id="{instance_id}"'
+    )
+    try:
+        series = client.list_time_series(
+            request={
+                "name": f"projects/{project}",
+                "filter": flt,
+                "interval": interval,
+                "view": monitoring_v3.ListTimeSeriesRequest.TimeSeriesView.FULL,
+                "aggregation": aggregation,
+            }
+        )
+        points: list[tuple[datetime, float]] = []
+        for ts in series:
+            for p in ts.points:
+                when = p.interval.end_time
+                if not isinstance(when, datetime):
+                    when = when.replace(tzinfo=UTC) if hasattr(when, "replace") else now
+                points.append((when, round(p.value.double_value, 2)))
+        points.sort(key=lambda x: x[0])
+        return points
+    except Exception:  # noqa: BLE001 - metric may not exist yet; proxy instead
+        return []
+
+
 def resize_instance(project: str, zone: str, name: str, machine_type: str) -> None:
     """Change a VM's machine type: stop → setMachineType → start. Blocking."""
     try:

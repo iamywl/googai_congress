@@ -9,6 +9,12 @@ set -e
 PHASE=$(curl -s -H "Metadata-Flavor: Google" \
   http://metadata.google.internal/computeMetadata/v1/instance/attributes/ml-phase || echo web)
 
+# Install the Google Cloud Ops Agent so guest memory utilisation is reported to
+# Cloud Monitoring (CPU is collected without an agent; memory is not). Best
+# effort: the load generator still starts even if the agent install fails.
+( curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent.sh \
+  && bash add-google-cloud-ops-agent.sh --also-install ) >/var/log/opsagent-install.log 2>&1 || true
+
 cat >/opt/mlload.py <<'PY'
 """Diurnal CPU load generator (stdlib only). A SINGLE worker duty-cycles one
 core so the reported utilisation of a shared-core e2 instance stays well below

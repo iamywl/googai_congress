@@ -3,8 +3,10 @@
 # CPU load generator, labelled `metriclens=true` so the backend can discover them
 # via Cloud Monitoring / the Compute API. Idempotent: skips instances that exist.
 #
-# Cost (us-central1, on-demand): e2-small ~= $12.2/mo each; 4 instances ~= $49/mo
-# (well under the ~$220 / month 300,000 KRW budget). Tear down with teardown.sh.
+# Cost (us-central1, on-demand): e2-small ~$12.2/mo + ephemeral external IP
+# ~$3.6/mo each => ~$16/mo each; 4 instances ~= $63/mo (well under the
+# ~$220 / month 300,000 KRW budget). The external IP lets the Ops Agent install
+# (for memory metrics). Tear down with teardown.sh.
 set -euo pipefail
 
 PROJECT="${PROJECT_ID:-knudc-yoonwoodev}"
@@ -33,7 +35,6 @@ for entry in "${FLEET[@]}"; do
     --project="$PROJECT" --zone="$ZONE" \
     --machine-type="$MACHINE" \
     --image-family=debian-12 --image-project=debian-cloud \
-    --no-address \
     --labels=metriclens=true \
     --metadata=ml-phase="$phase" \
     --metadata-from-file=startup-script="$DIR/startup.sh" \
