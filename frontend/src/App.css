@@ -397,8 +397,254 @@
   padding-top: 8px;
 }
 
+/* ----- Panel headings (with optional info icon) ----- */
+.panel h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.panel.inner {
+  background: transparent;
+  border: none;
+  padding: 16px 0 0;
+}
+
+/* ----- Info "i" tooltips ----- */
+.infotip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  outline: none;
+}
+
+.infotip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 999px;
+  border: 1px solid var(--text-dim);
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 700;
+  font-style: italic;
+  font-family: Georgia, 'Times New Roman', serif;
+  line-height: 1;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.infotip:hover .infotip-icon,
+.infotip:focus .infotip-icon {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(79, 156, 255, 0.12);
+}
+
+.infotip-bubble {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  width: max-content;
+  max-width: 260px;
+  padding: 9px 11px;
+  background: #0b1220;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  white-space: normal;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s, transform 0.15s;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.infotip-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--accent);
+}
+
+.infotip:hover .infotip-bubble,
+.infotip:focus .infotip-bubble {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Keep edge tooltips on-screen by anchoring them to the right. */
+.metric-row .infotip-bubble,
+.kpi-label .infotip-bubble {
+  left: 0;
+  transform: translateX(0) translateY(4px);
+}
+.metric-row .infotip-bubble::after,
+.kpi-label .infotip-bubble::after {
+  left: 7px;
+  transform: none;
+}
+.metric-row .infotip:hover .infotip-bubble,
+.metric-row .infotip:focus .infotip-bubble,
+.kpi-label .infotip:hover .infotip-bubble,
+.kpi-label .infotip:focus .infotip-bubble {
+  transform: translateX(0) translateY(0);
+}
+
+/* ----- GCP machine-type chips & picker ----- */
+.host-mtype {
+  font-size: 11px;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  color: var(--accent);
+  background: rgba(79, 156, 255, 0.1);
+  border-radius: 5px;
+  padding: 1px 6px;
+  margin-top: 2px;
+}
+
+.mtype-chip {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 12px;
+  color: var(--accent);
+  background: rgba(79, 156, 255, 0.1);
+  border: 1px solid rgba(79, 156, 255, 0.25);
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+
+.mtype-chip.dim {
+  color: var(--text-dim);
+  background: transparent;
+  border-color: var(--border);
+}
+
+.mtype-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.mtype-picker {
+  margin: 14px 0 4px;
+}
+
+.mtype-picker label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.mtype-row {
+  display: flex;
+  gap: 8px;
+}
+
+.mtype-row select {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 10px;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  appearance: none;
+}
+
+.mtype-row select:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.mtype-row .btn {
+  flex: 0 0 auto;
+  min-width: 64px;
+}
+
+/* ----- Chart legend info row ----- */
+.chart-legend-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 4px;
+}
+
+.chart-legend-info > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* ===================== Responsive ===================== */
+@media (max-width: 1100px) {
+  .kpi-strip {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 @media (max-width: 880px) {
   .grid {
     grid-template-columns: 1fr;
+  }
+  .kpi-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .app {
+    padding: 16px;
+  }
+  .host-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tab {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .kpi-strip {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .kpi-value strong {
+    font-size: 22px;
+  }
+  .app {
+    padding: 12px;
+    gap: 16px;
+  }
+  .panel {
+    padding: 14px;
+  }
+  .rec-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .infotip-bubble {
+    max-width: 200px;
   }
 }

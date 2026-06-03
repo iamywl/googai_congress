@@ -1,4 +1,6 @@
 import EChart from './EChart.jsx';
+import InfoTip from './InfoTip.jsx';
+import { GLOSSARY } from '../glossary.js';
 
 // Shows recent CPU history continued by the forecast point estimate and its
 // 95% confidence band, plus the model's back-tested MAPE against the 15% target.
@@ -41,17 +43,26 @@ export default function ForecastPanel({ metrics, forecast }) {
     <div className="panel">
       <EChart option={option} height={240} />
       <div className="metric-row">
-        <span>Predicted</span>
+        <span>
+          Predicted
+          <InfoTip text={GLOSSARY.predicted} label="예측치" />
+        </span>
         <strong>{forecast.predicted_value.toFixed(1)}%</strong>
       </div>
       <div className="metric-row">
-        <span>95% interval</span>
+        <span>
+          95% interval
+          <InfoTip text={GLOSSARY.interval} label="신뢰구간" />
+        </span>
         <strong>
           {forecast.lower_bound.toFixed(1)} – {forecast.upper_bound.toFixed(1)}%
         </strong>
       </div>
       <div className="metric-row">
-        <span>MAPE (target ≤ 15%)</span>
+        <span>
+          MAPE (target ≤ 15%)
+          <InfoTip text={GLOSSARY.mape} label="MAPE" />
+        </span>
         <strong className={mapeOk ? 'good' : 'warn'}>
           {forecast.mape == null ? 'n/a' : `${forecast.mape.toFixed(1)}%`}
         </strong>

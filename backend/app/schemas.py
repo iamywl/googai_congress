@@ -94,6 +94,18 @@ class ActionOut(BaseModel):
     saving_pct: float | None
 
 
+class MachineTypeOut(BaseModel):
+    """A predefined GCP machine type the UI can target for a resize."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    name: str
+    series: str
+    category: str
+    vcpu: int
+    memory_mb: int
+
+
 class RecommendationOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -106,3 +118,7 @@ class RecommendationOut(BaseModel):
     recommended_memory_mb: int
     est_cost_saving_pct: float
     slo_confidence: float
+    # Nearest predefined GCP instances, attached by the controller (computed,
+    # not persisted) so the dashboard can name the before/after machine type.
+    current_machine_type: MachineTypeOut | None = None
+    recommended_machine_type: MachineTypeOut | None = None

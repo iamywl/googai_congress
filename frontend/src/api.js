@@ -27,6 +27,56 @@ function sampleSeries(hostOffset = 0) {
   });
 }
 
+// Compact mirror of the backend GCP machine-type catalogue, used as the demo
+// fallback (and for client-side "nearest instance" labelling when the backend
+// recommendation omits it). Memory is in MB.
+const GB = 1024;
+export const SAMPLE_MACHINE_TYPES = [
+  { name: 'e2-small', series: 'E2', category: 'General purpose (cost-optimised)', vcpu: 2, memory_mb: 2 * GB },
+  { name: 'e2-medium', series: 'E2', category: 'General purpose (cost-optimised)', vcpu: 2, memory_mb: 4 * GB },
+  { name: 'e2-standard-2', series: 'E2', category: 'General purpose (cost-optimised)', vcpu: 2, memory_mb: 8 * GB },
+  { name: 'e2-standard-4', series: 'E2', category: 'General purpose (cost-optimised)', vcpu: 4, memory_mb: 16 * GB },
+  { name: 'e2-standard-8', series: 'E2', category: 'General purpose (cost-optimised)', vcpu: 8, memory_mb: 32 * GB },
+  { name: 'e2-standard-16', series: 'E2', category: 'General purpose (cost-optimised)', vcpu: 16, memory_mb: 64 * GB },
+  { name: 'e2-standard-32', series: 'E2', category: 'General purpose (cost-optimised)', vcpu: 32, memory_mb: 128 * GB },
+  { name: 'n2-highcpu-8', series: 'N2', category: 'General purpose (high-CPU)', vcpu: 8, memory_mb: 8 * GB },
+  { name: 'n2-highcpu-16', series: 'N2', category: 'General purpose (high-CPU)', vcpu: 16, memory_mb: 16 * GB },
+  { name: 'n2-highcpu-32', series: 'N2', category: 'General purpose (high-CPU)', vcpu: 32, memory_mb: 32 * GB },
+  { name: 'n2-standard-2', series: 'N2', category: 'General purpose (balanced)', vcpu: 2, memory_mb: 8 * GB },
+  { name: 'n2-standard-4', series: 'N2', category: 'General purpose (balanced)', vcpu: 4, memory_mb: 16 * GB },
+  { name: 'n2-standard-8', series: 'N2', category: 'General purpose (balanced)', vcpu: 8, memory_mb: 32 * GB },
+  { name: 'n2-standard-16', series: 'N2', category: 'General purpose (balanced)', vcpu: 16, memory_mb: 64 * GB },
+  { name: 'n2-standard-32', series: 'N2', category: 'General purpose (balanced)', vcpu: 32, memory_mb: 128 * GB },
+  { name: 'n2-standard-48', series: 'N2', category: 'General purpose (balanced)', vcpu: 48, memory_mb: 192 * GB },
+  { name: 'n2-standard-64', series: 'N2', category: 'General purpose (balanced)', vcpu: 64, memory_mb: 256 * GB },
+  { name: 'n2-standard-80', series: 'N2', category: 'General purpose (balanced)', vcpu: 80, memory_mb: 320 * GB },
+  { name: 'n2-highmem-8', series: 'N2', category: 'General purpose (high-memory)', vcpu: 8, memory_mb: 64 * GB },
+  { name: 'n2-highmem-16', series: 'N2', category: 'General purpose (high-memory)', vcpu: 16, memory_mb: 128 * GB },
+  { name: 'n2-highmem-32', series: 'N2', category: 'General purpose (high-memory)', vcpu: 32, memory_mb: 256 * GB },
+  { name: 'c2-standard-4', series: 'C2', category: 'Compute-optimised', vcpu: 4, memory_mb: 16 * GB },
+  { name: 'c2-standard-8', series: 'C2', category: 'Compute-optimised', vcpu: 8, memory_mb: 32 * GB },
+  { name: 'c2-standard-16', series: 'C2', category: 'Compute-optimised', vcpu: 16, memory_mb: 64 * GB },
+  { name: 'c2-standard-30', series: 'C2', category: 'Compute-optimised', vcpu: 30, memory_mb: 120 * GB },
+  { name: 'c2-standard-60', series: 'C2', category: 'Compute-optimised', vcpu: 60, memory_mb: 240 * GB },
+  { name: 'c3-standard-4', series: 'C3', category: 'Compute-optimised (latest gen)', vcpu: 4, memory_mb: 16 * GB },
+  { name: 'c3-standard-8', series: 'C3', category: 'Compute-optimised (latest gen)', vcpu: 8, memory_mb: 32 * GB },
+  { name: 'c3-standard-22', series: 'C3', category: 'Compute-optimised (latest gen)', vcpu: 22, memory_mb: 88 * GB },
+  { name: 'c3-standard-44', series: 'C3', category: 'Compute-optimised (latest gen)', vcpu: 44, memory_mb: 176 * GB },
+  { name: 'c3-standard-88', series: 'C3', category: 'Compute-optimised (latest gen)', vcpu: 88, memory_mb: 352 * GB },
+];
+
+// Smallest catalogue entry that covers a (vcpu, memory) demand — the client-side
+// twin of the backend nearest_fit, used to label hosts/recommendations.
+export function nearestMachineType(vcpu, memoryMb, catalog = SAMPLE_MACHINE_TYPES) {
+  const exact = catalog.find((m) => m.vcpu === vcpu && m.memory_mb === memoryMb);
+  if (exact) return exact;
+  const fits = catalog
+    .filter((m) => m.vcpu >= vcpu && m.memory_mb >= memoryMb)
+    .sort((a, b) => a.vcpu - b.vcpu || a.memory_mb - b.memory_mb);
+  if (fits.length) return fits[0];
+  return [...catalog].sort((a, b) => b.vcpu - a.vcpu || b.memory_mb - a.memory_mb)[0];
+}
+
 export const SAMPLE_HOSTS = [
   { id: 'sample-host-1', hostname: 'web-prod-01', environment: 'PROD', vcpu_count: 16, memory_mb: 32768 },
   { id: 'sample-host-2', hostname: 'api-staging-02', environment: 'STAGING', vcpu_count: 8, memory_mb: 16384 },
@@ -63,6 +113,8 @@ function sampleRecommendation(host) {
     recommended_memory_mb: recMem,
     est_cost_saving_pct: saving,
     slo_confidence: 99.9,
+    current_machine_type: nearestMachineType(host.vcpu_count, host.memory_mb),
+    recommended_machine_type: nearestMachineType(recVcpu, recMem),
   };
 }
 
@@ -79,6 +131,15 @@ export async function fetchHosts() {
     return { hosts, live: true };
   } catch {
     return { hosts: SAMPLE_HOSTS, live: false };
+  }
+}
+
+export async function fetchMachineTypes() {
+  try {
+    const types = await tryFetch('/api/v1/machine-types');
+    return { types, live: true };
+  } catch {
+    return { types: SAMPLE_MACHINE_TYPES, live: false };
   }
 }
 

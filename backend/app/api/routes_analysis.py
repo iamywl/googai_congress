@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from ..schemas import ForecastOut, MetricKind, RecommendationOut
+from ..core import machine_types
+from ..schemas import ForecastOut, MachineTypeOut, MetricKind, RecommendationOut
 from ..services import HostNotFoundError, InsufficientDataError
 from .deps import AnalysisServiceDep
 
@@ -48,4 +49,12 @@ async def create_recommendation(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Not enough metric history to recommend a resize.",
         ) from exc
-    return RecommendationOut.model_validate(rec)
+    out = RecommendationOut.model_validate(rec)
+    # Snap the abstract (vcpu, memory) figures to concrete GCP instances.
+    out.current_machine_type = MachineTypeOut.model_validate(
+        machine_types.describe(rec.current_vcpu, rec.current_memory_mb)
+    )
+    out.recommended_machine_type = MachineTypeOut.model_validate(
+        machine_types.nearest_fit(rec.recommended_vcpu, rec.recommended_memory_mb)
+    )
+    return out

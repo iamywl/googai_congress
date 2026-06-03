@@ -1,10 +1,16 @@
+import InfoTip from './InfoTip.jsx';
+import { GLOSSARY } from '../glossary.js';
+
 // Audit trail of forecasts run and resizes applied — persisted server-side, so
 // it survives reloads and makes the "predict → resize" loop tangible.
 export default function ActivityLog({ actions }) {
   if (!actions.length) {
     return (
       <div className="panel">
-        <h3>Activity Log</h3>
+        <h3>
+          Activity Log
+          <InfoTip text={GLOSSARY.activityLog} label="활동 로그" />
+        </h3>
         <p className="rec-note">No actions yet. Apply a resize or run a forecast.</p>
       </div>
     );
@@ -14,7 +20,10 @@ export default function ActivityLog({ actions }) {
 
   return (
     <div className="panel">
-      <h3>Activity Log</h3>
+      <h3>
+        Activity Log
+        <InfoTip text={GLOSSARY.activityLog} label="활동 로그" />
+      </h3>
       <ul className="log">
         {actions.map((a) => (
           <li key={a.id} className={`log-item ${a.action_type.toLowerCase()}`}>

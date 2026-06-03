@@ -1,4 +1,6 @@
 import EChart from './EChart.jsx';
+import InfoTip from './InfoTip.jsx';
+import { GLOSSARY } from '../glossary.js';
 
 // Multi-series time-series chart for a host's CPU / memory / network metrics.
 export default function MetricChart({ metrics }) {
@@ -35,5 +37,23 @@ export default function MetricChart({ metrics }) {
     ],
   };
 
-  return <EChart option={option} />;
+  return (
+    <div>
+      <div className="chart-legend-info">
+        <span>
+          CPU<InfoTip text={GLOSSARY.cpu} label="CPU" />
+        </span>
+        <span>
+          Memory<InfoTip text={GLOSSARY.memory} label="Memory" />
+        </span>
+        <span>
+          Net In<InfoTip text={GLOSSARY.netIn} label="Net In" />
+        </span>
+        <span>
+          Net Out<InfoTip text={GLOSSARY.netOut} label="Net Out" />
+        </span>
+      </div>
+      <EChart option={option} />
+    </div>
+  );
 }

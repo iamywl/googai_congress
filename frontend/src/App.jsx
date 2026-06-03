@@ -4,8 +4,10 @@ import {
   fetchActions,
   fetchForecast,
   fetchHosts,
+  fetchMachineTypes,
   fetchMetrics,
   fetchRecommendation,
+  nearestMachineType,
 } from './api.js';
 import MetricChart from './components/MetricChart.jsx';
 import ForecastPanel from './components/ForecastPanel.jsx';
@@ -14,6 +16,8 @@ import KpiStrip from './components/KpiStrip.jsx';
 import Gauge from './components/Gauge.jsx';
 import ResizeControls from './components/ResizeControls.jsx';
 import ActivityLog from './components/ActivityLog.jsx';
+import InfoTip from './components/InfoTip.jsx';
+import { GLOSSARY } from './glossary.js';
 import './App.css';
 
 export default function App() {
@@ -24,6 +28,7 @@ export default function App() {
   const [recommendation, setRecommendation] = useState(null);
   const [actions, setActions] = useState([]);
   const [fleet, setFleet] = useState([]);
+  const [machineTypes, setMachineTypes] = useState([]);
   const [live, setLive] = useState(true);
   const [busy, setBusy] = useState(false);
   const [baseline, setBaseline] = useState(1);
@@ -32,6 +37,10 @@ export default function App() {
   // utilisation can be recomputed as the allocation is resized. Written/read
   // only inside effects (never during render).
   const baselines = useRef({});
+
+  useEffect(() => {
+    fetchMachineTypes().then(({ types }) => setMachineTypes(types));
+  }, []);
 
   useEffect(() => {
     fetchHosts().then(({ hosts: list, live: isLive }) => {
@@ -137,6 +146,9 @@ export default function App() {
             <span className="host-spec">
               {h.vcpu_count} vCPU · {(h.memory_mb / 1024).toFixed(0)} GB
             </span>
+            <span className="host-mtype">
+              {nearestMachineType(h.vcpu_count, h.memory_mb, machineTypes.length ? machineTypes : undefined).name}
+            </span>
           </button>
         ))}
       </nav>
@@ -148,13 +160,19 @@ export default function App() {
         <aside className="side">
           {metrics.length > 0 && selected && (
             <div className="panel">
-              <h3>Projected Utilisation @ {selected.vcpu_count} vCPU</h3>
+              <h3>
+                Projected Utilisation @ {selected.vcpu_count} vCPU
+                <InfoTip text={GLOSSARY.projectedUtil} label="예상 가동률" />
+              </h3>
               <Gauge value={projectedUtil} label="projected %" />
               <ResizeControls
                 current={selected.vcpu_count}
+                currentMemoryMb={selected.memory_mb}
                 recommended={recommendation?.recommended_vcpu}
                 util={projectedUtil}
                 busy={busy}
+                machineTypes={machineTypes}
+                onSelectType={(t) => doResize(t.vcpu, t.memory_mb)}
                 onScaleDown={() =>
                   doResize(
                     Math.max(1, Math.floor(selected.vcpu_count / 2)),
