@@ -25,6 +25,8 @@ from docx.shared import Inches
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE = ROOT / "usenix2022.docx"
 ARCH = ROOT / "docs" / "diagrams" / "architecture.png"
+RUNTIME = ROOT / "docs" / "diagrams" / "runtime.png"
+APPROACH = ROOT / "docs" / "diagrams" / "approach.png"
 EVAL = ROOT / "docs" / "evaluation"
 OUT = ROOT / "docs" / "development_report_usenix.docx"
 
@@ -139,9 +141,12 @@ def build():
         "조회해 호스트로 적재하고, 권장 사양을 실제 머신 타입으로 변경(stop→setMachineType→"
         "start)할 수 있다. 비밀값은 Secret Manager에서 주입되며 하드코딩되지 않는다."
     )
+    IMG(RUNTIME, "그림 2. 런타임·CI/CD 구동 방식: Cloud Build 파이프라인, 서버리스 "
+                 "서빙, Cloud Monitoring 실측 적재·Compute Engine 실제 리사이즈.", width=6.2)
 
     # --------------------------------------------------- 3. 예측 엔진
     H1("3. 경량 예측 엔진")
+    IMG(APPROACH, "그림 3. MetricLens 접근법(방법) 개요: 텔레메트리 → 분해+AR 예측(95% 구간) → p95 피크 → SLO 제약 정수계획 → GCP 머신 타입 → 리사이즈.", width=6.5)
     B(
         "예측기는 시계열을 추세+계절+잔차로 분해한다. 추세는 주기별 블록 평균에 대한 "
         "최소제곱으로 추정해 계절 성분의 추세 누설을 제거하고, 계절 지수는 위상별 평균 "
@@ -211,15 +216,15 @@ def build():
         "신호의 본질적 특성으로 정직하게 보고한다."
     )
     IMG(EVAL / "fig_forecast_overlay.png",
-        "그림 2. 1-스텝 예측 vs 실측과 95% 예측구간(대화형·배치 아키타입).")
+        "그림 4. 1-스텝 예측 vs 실측과 95% 예측구간(대화형·배치 아키타입).")
     IMG(EVAL / "fig_error_rmse.png",
-        "그림 3. 예측 오차(RMSE): 모델 vs 기준선(낮을수록 우수).")
+        "그림 5. 예측 오차(RMSE): 모델 vs 기준선(낮을수록 우수).")
     IMG(EVAL / "fig_mase.png",
-        "그림 4. MASE — 1 미만이면 seasonal-naive를 능가.")
+        "그림 6. MASE — 1 미만이면 seasonal-naive를 능가.")
     IMG(EVAL / "fig_coverage.png",
-        "그림 5. 95% 예측구간 보정(PICP) — 공칭 0.95 대비.")
+        "그림 7. 95% 예측구간 보정(PICP) — 공칭 0.95 대비.")
     IMG(EVAL / "fig_residual_acf.png",
-        "그림 6. 잔차 자기상관 — 백색잡음 대역 내면 적합 양호.")
+        "그림 8. 잔차 자기상관 — 백색잡음 대역 내면 적합 양호.")
 
     # --------------------------------------------------- 8. 관련 연구
     H1("8. 관련 연구 및 차별화")

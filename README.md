@@ -29,6 +29,21 @@ GPU 없이 범용 CPU만으로 부하를 예측하고, 정수 계획법으로 SL
 
 ![MetricLens AI 시스템 아키텍처](docs/diagrams/architecture.png)
 
+**구동 방식 (런타임·CI/CD):**
+
+![MetricLens 런타임·CI/CD 구동 흐름](docs/diagrams/runtime.png)
+
+GCP 네이티브 서버리스: Cloud Build 파이프라인 → Cloud Run(scale-to-zero) 배포,
+백엔드가 Cloud Monitoring으로 실제 인스턴스 CPU/메모리를 읽고 Compute Engine API로
+예산 한도 내 실제 리사이즈.
+
+**접근법 (방법 개요):**
+
+![MetricLens 접근법 파이프라인](docs/diagrams/approach.png)
+
+텔레메트리 → 분해+AR 예측(95% 구간) → p95 피크 → SLO 제약 정수계획 → GCP 머신 타입 →
+리사이즈. 모델 유효성은 [논문 수준 평가](docs/11_model_evaluation.md) 참조.
+
 ## 구성
 
 | 영역 | 위치 | 스택 |
