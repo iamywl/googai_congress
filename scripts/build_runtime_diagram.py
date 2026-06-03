@@ -1,18 +1,14 @@
 #!/usr/bin/env python3
-"""Generate the MetricLens runtime & CI/CD operation diagram (publication style).
+"""MetricLens runtime & CI/CD operation diagram, EN primary + KR _kr.
 
-Visualises *how the solution actually runs*: the Cloud Build CI/CD pipeline that
-ships container images to Cloud Run, the request path through the serverless
-frontend/backend, and the real-fleet data flow (the backend reading instance
-metrics from Cloud Monitoring and resizing real VMs via the Compute Engine API).
-Official OSS/GCP brand logos (Simple Icons, CC0) are fetched and composed into a
-clean SVG, then rasterised to PNG with cairosvg.
-
-Outputs:  docs/diagrams/runtime.svg, docs/diagrams/runtime.png
+Visualises how the solution runs: Cloud Build CI/CD -> Cloud Run, serverless
+serving, and the real-fleet data flow (Cloud Monitoring read + Compute Engine
+resize). English is primary (runtime.png); Korean is runtime_kr.png.
 """
 
 from __future__ import annotations
 
+import math
 import re
 import urllib.request
 from pathlib import Path
@@ -24,24 +20,53 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "docs" / "diagrams"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-BG = "#ffffff"
-BAND = "#f5f7f9"
-BAND_BORDER = "#d0d7de"
-BOX_BORDER = "#c2c9d1"
-INK = "#1f2328"
-SUB = "#57606a"
-ARROW = "#57606a"
-G = "#4285F4"  # Google Cloud blue
+BG, BAND, BAND_BORDER, BOX_BORDER = "#ffffff", "#f5f7f9", "#d0d7de", "#c2c9d1"
+INK, SUB, ARROW, G = "#1f2328", "#57606a", "#57606a", "#4285F4"
+FONT = "NanumGothic, Helvetica, Arial, sans-serif"
 
 _PATH_RE = re.compile(r'<path[^>]*\sd="([^"]+)"')
 _UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36"
-_SRC = (
-    "https://cdn.jsdelivr.net/npm/simple-icons@13/icons/{slug}.svg",
-    "https://cdn.simpleicons.org/{slug}",
-)
+_SRC = ("https://cdn.jsdelivr.net/npm/simple-icons@13/icons/{slug}.svg",
+        "https://cdn.simpleicons.org/{slug}")
+
+# (key) -> (en, kr). Boxes/bands/arrows that differ by language.
+TR = {
+    "en": {
+        "b1t": "CI/CD pipeline (Cloud Build to Cloud Run)",
+        "b1s": "git push -> lint -> test -> build image -> deploy -> health check",
+        "dev": "Developer", "build_sub": "lint·test·build·deploy", "ar_sub": "container images",
+        "b2t": "Runtime serving (serverless)",
+        "b2s": "browser -> frontend -> backend; secrets from Secret Manager",
+        "browser": "Browser", "frontend": "Frontend", "backend": "Backend", "sm_sub": "DB DSN / secrets",
+        "b3t": "Real-fleet monitoring & resize (Cloud Monitoring + Compute Engine)",
+        "b3s": "backend reads live CPU/memory and resizes real VMs within the budget guard",
+        "mon_sub": "CPU + memory", "fleet": "Real fleet · ml-web/api/batch/idle",
+        "fleet_sub": "e2-small · load generator + Ops Agent",
+        "trigger": "trigger", "image": "image", "deploy": "deploy", "secrets": "secrets",
+        "read": "read CPU/mem", "resize": "resize (budget-guarded)",
+        "scs": "stop->change->start", "push": "push metrics (Ops Agent)",
+        "cap": "Figure. MetricLens runtime & CI/CD operation (GCP-native serverless).",
+    },
+    "kr": {
+        "b1t": "CI/CD 파이프라인 (Cloud Build → Cloud Run)",
+        "b1s": "git push → 린트 → 테스트 → 이미지 빌드 → 배포 → 헬스 체크",
+        "dev": "개발자(Developer)", "build_sub": "린트·테스트·빌드·배포", "ar_sub": "컨테이너 이미지",
+        "b2t": "런타임 서빙 (서버리스)",
+        "b2s": "브라우저 → 프론트엔드 → 백엔드, 비밀값은 Secret Manager",
+        "browser": "브라우저(Browser)", "frontend": "프론트엔드", "backend": "백엔드", "sm_sub": "DB DSN / 비밀값",
+        "b3t": "실제 플릿 모니터링 · 리사이즈 (Cloud Monitoring + Compute Engine)",
+        "b3s": "백엔드가 실측 CPU/메모리를 읽고, 예산 한도 내에서 실제 VM을 리사이즈",
+        "mon_sub": "CPU + 메모리", "fleet": "실제 플릿 · ml-web/api/batch/idle",
+        "fleet_sub": "e2-small · 부하 생성기 + Ops Agent",
+        "trigger": "트리거", "image": "이미지", "deploy": "배포", "secrets": "비밀값",
+        "read": "CPU/메모리 조회", "resize": "리사이즈 (예산 가드)",
+        "scs": "stop→change→start", "push": "메트릭 전송 (Ops Agent)",
+        "cap": "그림. MetricLens 런타임 · CI/CD 구동 방식 (GCP 네이티브 서버리스).",
+    },
+}
 
 
-def fetch(slug: str) -> str | None:
+def fetch(slug):
     for t in _SRC:
         try:
             req = urllib.request.Request(t.format(slug=slug), headers={"User-Agent": _UA})
@@ -51,120 +76,91 @@ def fetch(slug: str) -> str | None:
                     return m.group(1)
         except Exception:  # noqa: BLE001
             continue
-    print(f"  ! fetch failed {slug}")
     return None
 
 
 def text(x, y, s, size, fill, weight="normal", anchor="start"):
-    return (f'<text x="{x}" y="{y}" font-size="{size}" fill="{fill}" '
-            f'font-weight="{weight}" text-anchor="{anchor}" '
-            f'font-family="NanumGothic, Helvetica, Arial, sans-serif">{escape(s)}</text>')
+    return (f'<text x="{x}" y="{y}" font-size="{size}" fill="{fill}" font-weight="{weight}" '
+            f'text-anchor="{anchor}" font-family="{FONT}">{escape(s)}</text>')
 
 
-def box(paths, x, y, w, h, slug, title, sub, color=G):
-    parts = [f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="8" '
-             f'fill="#ffffff" stroke="{BOX_BORDER}"/>']
-    tx = x + 14
-    d = paths.get(slug) if slug else None
+def box(paths, x, y, w, h, slug, title, sub):
+    parts = [f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="8" fill="#fff" stroke="{BOX_BORDER}"/>']
+    tx = x + 14; d = paths.get(slug) if slug else None
     if d:
-        size = 26
-        ly = y + h / 2 - size / 2
-        parts.append(f'<g transform="translate({tx},{ly}) scale({size/24.0})">'
-                     f'<path d="{d}" fill="{color}"/></g>')
+        parts.append(f'<g transform="translate({tx},{y + h / 2 - 13}) scale({26 / 24.0})"><path d="{d}" fill="{G}"/></g>')
         tx += 36
     parts.append(text(tx, y + h / 2 - 3, title, 13, INK, "bold"))
     parts.append(text(tx, y + h / 2 + 15, sub, 10.5, SUB))
-    return "".join(parts), (x, y, w, h)
+    return "".join(parts)
 
 
 def arrow(x1, y1, x2, y2, label="", lx=None, ly=None):
-    import math
-    ang = math.atan2(y2 - y1, x2 - x1)
-    ah = 7
+    ang = math.atan2(y2 - y1, x2 - x1); ah = 7
     bx, by = x2 - ah * math.cos(ang), y2 - ah * math.sin(ang)
     p1 = (bx - ah * math.cos(ang - 0.5), by - ah * math.sin(ang - 0.5))
     p2 = (bx - ah * math.cos(ang + 0.5), by - ah * math.sin(ang + 0.5))
     s = (f'<line x1="{x1}" y1="{y1}" x2="{bx:.1f}" y2="{by:.1f}" stroke="{ARROW}" stroke-width="1.5"/>'
          f'<path d="M{x2:.1f},{y2:.1f} L{p1[0]:.1f},{p1[1]:.1f} L{p2[0]:.1f},{p2[1]:.1f} Z" fill="{ARROW}"/>')
     if label:
-        if lx is None:
-            lx = (x1 + x2) / 2
-        if ly is None:
-            ly = (y1 + y2) / 2 - 5
-        s += text(lx, ly, label, 10.5, SUB, anchor="middle")
+        s += text(lx if lx is not None else (x1 + x2) / 2, ly if ly is not None else (y1 + y2) / 2 - 5,
+                  label, 10.5, SUB, anchor="middle")
     return s
 
 
 def band(x, y, w, h, label, sub):
-    return ("".join([
-        f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="10" fill="{BAND}" stroke="{BAND_BORDER}"/>',
-        text(x + 16, y + 22, label, 13, INK, "bold"),
-        text(x + 16, y + 39, sub, 10, SUB),
-    ]))
+    return (f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="10" fill="{BAND}" stroke="{BAND_BORDER}"/>'
+            + text(x + 16, y + 22, label, 13, INK, "bold") + text(x + 16, y + 39, sub, 10, SUB))
+
+
+def build_one(paths, lang, suf):
+    T = TR[lang]; W, H = 1140, 600
+    svg = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">',
+           f'<rect width="{W}" height="{H}" fill="{BG}"/>']
+    bh = 58
+    svg.append(band(30, 40, W - 60, 110, T["b1t"], T["b1s"]))
+    y1 = 78
+    svg += [box(paths, 50, y1, 150, bh, "git", T["dev"], "git push"),
+            box(paths, 270, y1, 230, bh, "googlecloud", "Cloud Build", T["build_sub"]),
+            box(paths, 560, y1, 180, bh, "googlecloud", "Artifact Registry", T["ar_sub"]),
+            box(paths, 800, y1, 190, bh, "googlecloud", "Cloud Run", "scale-to-zero")]
+    svg += [arrow(200, y1 + bh / 2, 270, y1 + bh / 2, T["trigger"]),
+            arrow(500, y1 + bh / 2, 560, y1 + bh / 2, T["image"]),
+            arrow(740, y1 + bh / 2, 800, y1 + bh / 2, T["deploy"])]
+
+    svg.append(band(30, 190, W - 60, 110, T["b2t"], T["b2s"]))
+    y2 = 228
+    svg += [box(paths, 50, y2, 150, bh, None, T["browser"], "React SPA"),
+            box(paths, 270, y2, 190, bh, "googlecloud", T["frontend"], "Cloud Run · nginx"),
+            box(paths, 520, y2, 190, bh, "googlecloud", T["backend"], "FastAPI · Cloud Run"),
+            box(paths, 800, y2, 190, bh, "googlecloud", "Secret Manager", T["sm_sub"])]
+    svg += [arrow(200, y2 + bh / 2, 270, y2 + bh / 2, "HTTPS"),
+            arrow(460, y2 + bh / 2, 520, y2 + bh / 2, "REST"),
+            arrow(710, y2 + bh / 2, 800, y2 + bh / 2, T["secrets"])]
+
+    svg.append(band(30, 340, W - 60, 220, T["b3t"], T["b3s"]))
+    svg += [box(paths, 120, 410, 220, bh, "googlecloud", "Cloud Monitoring", T["mon_sub"]),
+            box(paths, 470, 410, 230, bh, "googlecloud", "Compute Engine API", "setMachineType"),
+            box(paths, 760, 410, 320, 70, None, T["fleet"], T["fleet_sub"])]
+    be = 520 + 95
+    svg += [arrow(be, y2 + bh, 230, 410, T["read"]),
+            arrow(be + 40, y2 + bh, 585, 410, T["resize"]),
+            arrow(585, 468, 760, 455, T["scs"]),
+            arrow(760, 460, 340, 455, T["push"], lx=560, ly=520)]
+    svg.append(text(W / 2, H - 16, T["cap"], 12, INK, "normal", "middle"))
+    svg.append("</svg>")
+    txt = "".join(svg)
+    (OUT_DIR / f"runtime{suf}.svg").write_text(txt, encoding="utf-8")
+    cairosvg.svg2png(bytestring=txt.encode("utf-8"), write_to=str(OUT_DIR / f"runtime{suf}.png"),
+                     output_width=W * 2, output_height=H * 2)
 
 
 def build():
-    slugs = {"git", "googlecloud", "docker"}
     print("Fetching logos…")
-    paths = {s: fetch(s) for s in slugs}
-
-    W, H = 1140, 600
-    svg = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">',
-           f'<rect width="{W}" height="{H}" fill="{BG}"/>']
-
-    bw, bh = 188, 58
-    # ---- Band 1: CI/CD ----
-    svg.append(band(30, 40, W - 60, 110, "CI/CD 파이프라인 (Cloud Build → Cloud Run)",
-                    "git push → 린트 → 테스트 → 이미지 빌드 → 배포 → 헬스 체크"))
-    y1 = 78
-    b_dev, r_dev = box(paths, 50, y1, 150, bh, "git", "개발자(Developer)", "git push")
-    b_cb, r_cb = box(paths, 270, y1, 230, bh, "googlecloud", "Cloud Build", "린트·테스트·빌드·배포")
-    b_ar, r_ar = box(paths, 560, y1, 180, bh, "googlecloud", "Artifact Registry", "컨테이너 이미지")
-    b_cr, r_cr = box(paths, 800, y1, 190, bh, "googlecloud", "Cloud Run", "scale-to-zero")
-    svg += [b_dev, b_cb, b_ar, b_cr]
-    svg.append(arrow(200, y1 + bh / 2, 270, y1 + bh / 2, "트리거"))
-    svg.append(arrow(500, y1 + bh / 2, 560, y1 + bh / 2, "이미지"))
-    svg.append(arrow(740, y1 + bh / 2, 800, y1 + bh / 2, "배포"))
-
-    # ---- Band 2: Runtime serving ----
-    svg.append(band(30, 190, W - 60, 110, "런타임 서빙 (서버리스)",
-                    "브라우저 → 프론트엔드 → 백엔드, 비밀값은 Secret Manager"))
-    y2 = 228
-    b_br, _ = box(paths, 50, y2, 150, bh, None, "브라우저(Browser)", "React SPA")
-    b_fe, _ = box(paths, 270, y2, 190, bh, "googlecloud", "프론트엔드", "Cloud Run · nginx")
-    b_be, r_be = box(paths, 520, y2, 190, bh, "googlecloud", "백엔드", "FastAPI · Cloud Run")
-    b_sm, _ = box(paths, 800, y2, 190, bh, "googlecloud", "Secret Manager", "DB DSN / 비밀값")
-    svg += [b_br, b_fe, b_be, b_sm]
-    svg.append(arrow(200, y2 + bh / 2, 270, y2 + bh / 2, "HTTPS"))
-    svg.append(arrow(460, y2 + bh / 2, 520, y2 + bh / 2, "REST"))
-    svg.append(arrow(710, y2 + bh / 2, 800, y2 + bh / 2, "비밀값"))
-
-    # ---- Band 3: real fleet monitoring + resize ----
-    svg.append(band(30, 340, W - 60, 220, "실제 플릿 모니터링 · 리사이즈 (Cloud Monitoring + Compute Engine)",
-                    "백엔드가 실측 CPU/메모리를 읽고, 예산 한도 내에서 실제 VM을 리사이즈"))
-    b_mon, _ = box(paths, 120, 410, 220, bh, "googlecloud", "Cloud Monitoring", "CPU + 메모리")
-    b_ce, _ = box(paths, 470, 410, 230, bh, "googlecloud", "Compute Engine API", "setMachineType")
-    b_fleet, _ = box(paths, 760, 410, 320, 70, None, "실제 플릿 · ml-web/api/batch/idle",
-                     "e2-small · 부하 생성기 + Ops Agent")
-    svg += [b_mon, b_ce, b_fleet]
-
-    be_cx, be_by = 520 + 95, y2 + bh  # backend bottom-center
-    svg.append(arrow(be_cx, be_by, 230, 410, "CPU/메모리 조회"))
-    svg.append(arrow(be_cx + 40, be_by, 585, 410, "리사이즈 (예산 가드)"))
-    svg.append(arrow(585, 468, 760, 455, "stop→change→start"))
-    svg.append(arrow(760, 460, 340, 455, "메트릭 전송 (Ops Agent)", lx=560, ly=520))
-
-    svg.append(text(W / 2, H - 16,
-                    "그림. MetricLens 런타임 · CI/CD 구동 방식 (GCP 네이티브 서버리스).",
-                    12, INK, "normal", "middle"))
-    svg.append("</svg>")
-    svg_text = "".join(svg)
-
-    (OUT_DIR / "runtime.svg").write_text(svg_text, encoding="utf-8")
-    cairosvg.svg2png(bytestring=svg_text.encode("utf-8"),
-                     write_to=str(OUT_DIR / "runtime.png"),
-                     output_width=W * 2, output_height=H * 2)
-    print(f"Wrote {OUT_DIR/'runtime.svg'} and runtime.png")
+    paths = {s: fetch(s) for s in ("git", "googlecloud", "docker")}
+    build_one(paths, "en", "")
+    build_one(paths, "kr", "_kr")
+    print(f"Wrote runtime.png (EN) + runtime_kr.png to {OUT_DIR}")
 
 
 if __name__ == "__main__":

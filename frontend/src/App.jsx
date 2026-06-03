@@ -140,7 +140,7 @@ export default function App() {
         </div>
         <div className="topbar-right">
           <a className="deck-link" href="/presentation.html" target="_blank" rel="noreferrer">
-            📊 소개자료
+            📊 Slides
           </a>
           <span className={`badge ${live ? 'live' : 'demo'}`}>
             {live ? '● live' : '● demo data'}

@@ -123,11 +123,24 @@ function sampleRecommendation(host) {
   };
 }
 
-async function tryFetch(path, options) {
+// Retry transient failures (notably Cloud Run cold-start) before falling back to
+// demo data, so a scale-to-zero backend still shows live data on first load.
+async function tryFetch(path, options, retries = 3) {
   if (!BASE_URL) throw new Error('no backend configured');
-  const resp = await fetch(`${BASE_URL}${path}`, options);
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-  return resp.json();
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      const resp = await fetch(`${BASE_URL}${path}`, options);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      return await resp.json();
+    } catch (e) {
+      lastErr = e;
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+      }
+    }
+  }
+  throw lastErr;
 }
 
 export async function fetchHosts() {

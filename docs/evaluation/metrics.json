@@ -1,7 +1,7 @@
 {
   "interactive_web": {
-    "mae_model": 2.691,
     "rmse_model": 4.024,
+    "mae_model": 2.691,
     "mape_model": 20.03,
     "rmse_naive": 4.147,
     "rmse_snaive": 4.996,
@@ -13,8 +13,8 @@
     "dm_p": 0.0393
   },
   "interactive_api": {
-    "mae_model": 2.444,
     "rmse_model": 3.991,
+    "mae_model": 2.444,
     "mape_model": 10.86,
     "rmse_naive": 5.617,
     "rmse_snaive": 5.747,
@@ -26,8 +26,8 @@
     "dm_p": 0.0002
   },
   "steady_cache": {
-    "mae_model": 1.768,
     "rmse_model": 3.136,
+    "mae_model": 1.768,
     "mape_model": 14.89,
     "rmse_naive": 3.223,
     "rmse_snaive": 3.814,
@@ -39,8 +39,8 @@
     "dm_p": 0.2094
   },
   "batch_etl": {
-    "mae_model": 2.849,
     "rmse_model": 4.372,
+    "mae_model": 2.849,
     "mape_model": 13.86,
     "rmse_naive": 32.384,
     "rmse_snaive": 5.91,
@@ -52,8 +52,8 @@
     "dm_p": 0.0003
   },
   "service_lowutil": {
-    "mae_model": 0.981,
     "rmse_model": 1.828,
+    "mae_model": 0.981,
     "mape_model": 11.47,
     "rmse_naive": 2.444,
     "rmse_snaive": 2.846,
@@ -65,8 +65,8 @@
     "dm_p": 0.0266
   },
   "devtest": {
-    "mae_model": 2.814,
     "rmse_model": 3.99,
+    "mae_model": 2.814,
     "mape_model": 32.62,
     "rmse_naive": 2.746,
     "rmse_snaive": 4.27,
