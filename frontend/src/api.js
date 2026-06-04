@@ -331,3 +331,100 @@ export function originalSizeFor(hostname) {
   const h = SAMPLE_HOSTS.find((s) => s.hostname === hostname);
   return h ? { vcpu_count: h.vcpu_count, memory_mb: h.memory_mb } : null;
 }
+
+// --- Live scale-out test (demo) -------------------------------------------
+// Mirrors backend app/core/livetest.py so the animated demo still runs when no
+// backend is configured (offline preview / screenshots). When a backend is up,
+// the real endpoints drive it (and persist a Host + Metrics + Actions).
+const LT = {
+  T_RUNNING: 3, T_LOAD: 5, T_FORECAST: 11, T_SCALE: 13, T_RESIZING: 1.6, T_DONE: 24,
+  SEC_PER_MIN: 0.5, THRESHOLD: 65, BASE: 12, PEAK: 93, POSTCPU: 44,
+  PRE: { machine_type: 'e2-small', vcpu: 2, memory_mb: 2048 },
+  POST: { machine_type: 'e2-standard-4', vcpu: 4, memory_mb: 16384 },
+};
+const ltNoise = (t) => 2.2 * Math.sin(t * 1.7) + 1.3 * Math.sin(t * 0.7 + 1);
+function ltCpu(e) {
+  let v;
+  if (e < LT.T_LOAD) v = LT.BASE + ltNoise(e);
+  else if (e < LT.T_SCALE) {
+    v = LT.BASE + (LT.PEAK - LT.BASE) * ((e - LT.T_LOAD) / (LT.T_SCALE - LT.T_LOAD)) + ltNoise(e);
+  } else v = LT.POSTCPU + (LT.PEAK - LT.POSTCPU) * Math.exp(-(e - LT.T_SCALE) / 3) + ltNoise(e);
+  return Math.round(Math.max(0, Math.min(100, v)) * 10) / 10;
+}
+function ltPhase(e) {
+  if (e < LT.T_RUNNING) return 'provisioning';
+  if (e < LT.T_LOAD) return 'running';
+  if (e < LT.T_FORECAST) return 'load';
+  if (e < LT.T_SCALE) return 'forecast';
+  if (e < LT.T_DONE) return 'scaling';
+  return 'done';
+}
+function ltStatus(e) {
+  if (e < LT.T_RUNNING) return 'PROVISIONING';
+  if (e >= LT.T_SCALE && e < LT.T_SCALE + LT.T_RESIZING) return 'RESIZING';
+  return 'RUNNING';
+}
+function ltSimulate(elapsed, mode) {
+  const e = Math.max(0, elapsed);
+  const scaled = e >= LT.T_SCALE;
+  const done = e >= LT.T_DONE;
+  const spec = scaled ? LT.POST : LT.PRE;
+  const series = [];
+  if (e >= LT.T_RUNNING) {
+    const end = Math.min(e, LT.T_DONE);
+    for (let t = LT.T_RUNNING; t <= end + 1e-9; t += 0.5) {
+      series.push([Math.round((t / LT.SEC_PER_MIN) * 10) / 10, ltCpu(t)]);
+    }
+  }
+  const ev = (t, kind, key) => ({ minute: Math.round((t / LT.SEC_PER_MIN) * 10) / 10, kind, key });
+  const events = [];
+  if (e >= LT.T_RUNNING) events.push(ev(LT.T_RUNNING, 'node', 'ev_running'));
+  if (e >= LT.T_LOAD) events.push(ev(LT.T_LOAD, 'load', 'ev_load'));
+  if (e >= LT.T_FORECAST) events.push(ev(LT.T_FORECAST, 'forecast', 'ev_forecast'));
+  if (e >= LT.T_SCALE) events.push(ev(LT.T_SCALE, 'scale', 'ev_scale'));
+  const forecast = e >= LT.T_FORECAST ? { predicted: 108, lower: 95, upper: 121, mape: 6.4 } : null;
+  const recommendation = e >= LT.T_FORECAST ? {
+    current_vcpu: LT.PRE.vcpu, recommended_vcpu: LT.POST.vcpu,
+    current_memory_mb: LT.PRE.memory_mb, recommended_memory_mb: LT.POST.memory_mb,
+    current_machine_type: LT.PRE.machine_type, recommended_machine_type: LT.POST.machine_type,
+  } : null;
+  return {
+    active: true, mode, phase: ltPhase(e), threshold: LT.THRESHOLD,
+    elapsed: Math.round(e * 100) / 100, scaled, done, cpu_now: series.length ? series[series.length - 1][1] : null,
+    series, events, forecast, recommendation, spec, pre: LT.PRE, post: LT.POST,
+    node: { hostname: mode === 'real' ? 'ml-testnode' : 'loadtest-sim-01', status: ltStatus(e), ...spec },
+  };
+}
+
+let _ltT0 = null;
+let _ltMode = 'sim';
+async function ltOnce(path, method) {
+  if (!BASE_URL) throw new Error('no backend');
+  const resp = await fetch(`${BASE_URL}${path}`, method ? { method } : undefined);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return resp.json();
+}
+export async function livetestStart(mode = 'sim') {
+  try {
+    return { ...(await ltOnce(`/api/v1/livetest/start?mode=${mode}`, 'POST')), live: true };
+  } catch {
+    _ltT0 = Date.now(); _ltMode = mode;
+    return { ...ltSimulate(0, mode), live: false };
+  }
+}
+export async function livetestState() {
+  try {
+    return { ...(await ltOnce('/api/v1/livetest/state')), live: true };
+  } catch {
+    if (_ltT0 == null) return { active: false, live: false };
+    return { ...ltSimulate((Date.now() - _ltT0) / 1000, _ltMode), live: false };
+  }
+}
+export async function livetestStop() {
+  _ltT0 = null;
+  try { return await ltOnce('/api/v1/livetest/stop', 'POST'); } catch { return { active: false }; }
+}
+export async function livetestTeardown() {
+  _ltT0 = null;
+  try { return await ltOnce('/api/v1/livetest/teardown', 'POST'); } catch { return { active: false, removed: true }; }
+}

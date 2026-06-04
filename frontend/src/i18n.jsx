@@ -95,6 +95,38 @@ const STR = {
   tvDesc: { en: 'Each button runs a real backend scenario; forecasts and resizes are persisted and shown instantly on Dashboard and History.',
             ko: '버튼을 누르면 실제 백엔드 시나리오가 실행됩니다. 예측·리사이즈는 영속 기록되어 Dashboard·History에 즉시 반영됩니다.' },
   tvRunning: { en: 'Running…', ko: '실행 중…' },
+
+  // Live test panel
+  ltTitle: { en: 'Live Scale-Out Test', ko: '라이브 스케일아웃 테스트' },
+  ltDesc: { en: 'Provision a test node, apply load, and watch the forecaster trigger a scale-up — live.',
+            ko: '테스트 노드를 띄우고 부하를 가해, 예측기가 스케일업을 유발하는 과정을 실시간으로 확인합니다.' },
+  ltModeSim: { en: 'Simulated', ko: '시뮬레이션' },
+  ltModeReal: { en: 'Real GCP', ko: '실제 GCP' },
+  ltRun: { en: '▶ Run live test', ko: '▶ 라이브 테스트 실행' },
+  ltRunning: { en: '● Running…', ko: '● 실행 중…' },
+  ltStop: { en: '■ Stop', ko: '■ 중지' },
+  ltTeardown: { en: '🗑 Delete test node', ko: '🗑 테스트 노드 삭제' },
+  ltCpu: { en: 'CPU %', ko: 'CPU %' },
+  ltThreshold: { en: 'SLO ceiling', ko: 'SLO 상한' },
+  ltForecast: { en: 'forecast', ko: '예측' },
+  ltMinutes: { en: 'minutes', ko: '분' },
+  ltNode: { en: 'Test node', ko: '테스트 노드' },
+  ltSpec: { en: 'Allocation', ko: '할당' },
+  ltMachine: { en: 'Machine type', ko: '머신 타입' },
+  ltStatus: { en: 'Status', ko: '상태' },
+  ltScaledBadge: { en: 'SCALED UP', ko: '스케일업됨' },
+  // step labels
+  ltStepProvision: { en: '1 · Provision node', ko: '1 · 노드 생성' },
+  ltStepLoad: { en: '2 · Apply load', ko: '2 · 부하 인가' },
+  ltStepBreach: { en: '3 · CPU exceeds ceiling', ko: '3 · CPU 임계 초과' },
+  ltStepForecast: { en: '4 · Forecast predicts breach', ko: '4 · 예측이 초과 경고' },
+  ltStepScale: { en: '5 · Scale up / provision', ko: '5 · 스케일업 / 프로비저닝' },
+  ltStepStable: { en: '6 · Stabilised', ko: '6 · 안정화' },
+  // event labels
+  ev_running: { en: 'node RUNNING', ko: '노드 RUNNING' },
+  ev_load: { en: 'load applied', ko: '부하 인가' },
+  ev_forecast: { en: 'breach predicted', ko: '초과 예측' },
+  ev_scale: { en: 'scaled up', ko: '스케일업' },
 };
 
 const LangContext = createContext({ lang: 'en', setLang: () => {}, t: (k) => k });

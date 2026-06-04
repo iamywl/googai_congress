@@ -16,6 +16,7 @@ import KpiStrip from './components/KpiStrip.jsx';
 import Gauge from './components/Gauge.jsx';
 import ResizeControls from './components/ResizeControls.jsx';
 import ActivityLog from './components/ActivityLog.jsx';
+import LiveTestPanel from './components/LiveTestPanel.jsx';
 import InfoTip from './components/InfoTip.jsx';
 import NavBar from './components/NavBar.jsx';
 import HistoryView from './views/HistoryView.jsx';
@@ -167,6 +168,8 @@ export default function App() {
 
       {view === 'dashboard' && (
         <>
+          <LiveTestPanel onChanged={loadFleet} />
+
           {fleet.length > 0 && <KpiStrip fleet={fleet} />}
 
           <nav className="host-tabs">

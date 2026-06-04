@@ -85,14 +85,27 @@ def text(x, y, s, size, fill, weight="normal", anchor="start"):
             f'text-anchor="{anchor}" font-family="{FONT}">{escape(s)}</text>')
 
 
+def _strwidth(s, size):
+    """Estimate rendered width: CJK/Hangul glyphs are full-width, others ~0.52em."""
+    return sum(size * (1.0 if ord(ch) >= 0x1100 else 0.52) for ch in s)
+
+
+def _fit(s, maxw, size, minsize):
+    """Largest font size <= ``size`` (down to ``minsize``) that fits ``maxw`` px."""
+    while size > minsize and _strwidth(s, size) > maxw:
+        size -= 0.5
+    return size
+
+
 def box(paths, x, y, w, h, slug, title, sub):
     parts = [f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="8" fill="#fff" stroke="{BOX_BORDER}"/>']
     tx = x + 14; d = paths.get(slug) if slug else None
     if d:
         parts.append(f'<g transform="translate({tx},{y + h / 2 - 13}) scale({26 / 24.0})"><path d="{d}" fill="{G}"/></g>')
         tx += 36
-    parts.append(text(tx, y + h / 2 - 3, title, 13, INK, "bold"))
-    parts.append(text(tx, y + h / 2 + 15, sub, 10.5, SUB))
+    avail = (x + w) - tx - 10  # keep a right pad so text never crosses the border
+    parts.append(text(tx, y + h / 2 - 3, title, _fit(title, avail, 13, 9), INK, "bold"))
+    parts.append(text(tx, y + h / 2 + 15, sub, _fit(sub, avail, 10.5, 8), SUB))
     return "".join(parts)
 
 
@@ -140,7 +153,7 @@ def build_one(paths, lang, suf):
            f'<rect width="{W}" height="{H}" fill="{BG}"/>']
     bh = 58
     svg.append(band(30, 40, W - 60, 110, T["b1t"], T["b1s"]))
-    y1 = 78
+    y1 = 86
     svg += [box(paths, 50, y1, 150, bh, "git", T["dev"], "git push"),
             box(paths, 270, y1, 230, bh, "googlecloud", "Cloud Build", T["build_sub"]),
             box(paths, 560, y1, 180, bh, "googlecloud", "Artifact Registry", T["ar_sub"]),
@@ -150,7 +163,7 @@ def build_one(paths, lang, suf):
             arrow(740, y1 + bh / 2, 800, y1 + bh / 2, T["deploy"])]
 
     svg.append(band(30, 190, W - 60, 110, T["b2t"], T["b2s"]))
-    y2 = 228
+    y2 = 236
     svg += [box(paths, 50, y2, 150, bh, None, T["browser"], "React SPA"),
             box(paths, 270, y2, 190, bh, "googlecloud", T["frontend"], "Cloud Run · nginx"),
             box(paths, 520, y2, 190, bh, "googlecloud", T["backend"], "FastAPI · Cloud Run"),

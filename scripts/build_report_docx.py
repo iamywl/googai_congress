@@ -35,7 +35,7 @@ BE = sys.argv[2] if len(sys.argv) > 2 else "(deployed Cloud Run URL)"
 def fig(name, lang):
     """Figure path: English primary (base), Korean (_kr)."""
     suf = "_kr" if lang == "kr" else ""
-    base = DIAG if name in ("architecture", "runtime", "approach") else EVAL
+    base = DIAG if name in ("architecture", "runtime", "approach", "method_math") else EVAL
     return base / f"{name}{suf}.png"
 
 
@@ -146,7 +146,43 @@ def sections(lang):
                  "(95% interval) -> p95 peak -> integer program -> machine type -> resize.",
                  "그림 3. MetricLens 접근법(방법) 개요: 텔레메트리 → 분해+AR 예측(95% 구간) → p95 피크 "
                  "→ SLO 제약 정수계획 → GCP 머신 타입 → 리사이즈.", 6.6)),
-        ("H2", "3.1. Decomposition and AR residual correction", "3.1. 계절-추세 분해와 AR 잔차 보정"),
+        ("H2", "3.1. End-to-end computation (the equations the code evaluates)",
+         "3.1. 전 과정 연산 (코드가 계산하는 수식)"),
+        ("B",
+         "The full computation is an ordered pipeline (Figure 4). (1) Trend: an OLS line "
+         "T_t = b*t + a is fitted not on raw samples but on per-period block means at "
+         "their block centres, so averaging a full season cancels the periodic part and "
+         "it cannot leak into the slope. (2) Seasonal: the detrended series d_t = y_t - "
+         "T_t is averaged by phase j = t mod m and re-centred so the indices S_j sum to "
+         "zero. (3) Residual + AR(1): r_t = d_t - S_(t mod m); rho is the residuals' lag-1 "
+         "autocorrelation clamped to [0, 0.95]. (4) Point forecast at horizon h: "
+         "y_hat = T_(n-1+h) + S_((n-1+h) mod m) + rho^h * r_(n-1). (5) Interval: an "
+         "expanding-window one-step backtest yields RMSE, giving the 95% band "
+         "y_hat +/- 1.96*RMSE. The optimizer then takes the forecast peak: (6) the robust "
+         "peak is the nearest-rank p95; (7) load in resource units L = (p95/100)*u_cur*"
+         "gamma; (8) it solves min u s.t. L <= tau*u over u in {1..u_cur}; (9) the exact "
+         "solution is u* = min(u_cur, ceil(L/tau)), repeated for memory in 256 MB blocks, "
+         "yielding the cost saving and the snapped GCP machine type. Every term in "
+         "Figure 4 is the exact expression evaluated in core.forecaster and core.optimizer.",
+         "전 과정은 순서가 있는 파이프라인이다(그림 4). (1) 추세: OLS 직선 T_t = b·t + a를 원시 "
+         "표본이 아니라 주기별 블록 평균(블록 중심 위치)에 적합한다. 한 주기를 평균하면 계절 성분이 "
+         "상쇄되어 기울기에 누설되지 않는다. (2) 계절: 탈추세 계열 d_t = y_t − T_t를 위상 "
+         "j = t mod m별로 평균하고, 지수 S_j의 합이 0이 되도록 재중심화한다. (3) 잔차 + AR(1): "
+         "r_t = d_t − S_(t mod m), ρ는 잔차의 시차-1 자기상관으로 [0, 0.95]에 클램프한다. "
+         "(4) 점예측(지평 h): ŷ = T_(n-1+h) + S_((n-1+h) mod m) + ρ^h·r_(n-1). (5) 구간: "
+         "확장창 1-스텝 백테스트로 RMSE를 구해 95% 구간 ŷ ± 1.96·RMSE를 만든다. 이어 옵티마이저는 "
+         "예측 피크를 입력으로 받는다. (6) 강건 피크는 근접순위 p95, (7) 자원단위 부하 "
+         "L = (p95/100)·u_cur·γ, (8) u ∈ {1..u_cur}에서 min u s.t. L ≤ τ·u를 풀고, (9) 정확 해 "
+         "u* = min(u_cur, ceil(L/τ))이며 메모리는 256MB 블록으로 동일하게 계산해 비용 절감과 GCP "
+         "머신 타입 스냅을 산출한다. 그림 4의 모든 항은 core.forecaster·core.optimizer가 실제로 "
+         "계산하는 식이다."),
+        ("IMG", ("method_math",
+                 "Figure 4. End-to-end computation pipeline with the exact equations "
+                 "(STL + AR(1) forecast -> 95% interval; p95 peak -> integer program -> "
+                 "machine type).",
+                 "그림 4. 정확한 수식이 포함된 전 과정 연산 파이프라인 (STL + AR(1) 예측 → 95% 구간; "
+                 "p95 피크 → 정수계획 → 머신 타입).", 6.6)),
+        ("H2", "3.2. Decomposition and AR residual correction", "3.2. 계절-추세 분해와 AR 잔차 보정"),
         ("B",
          "The series is modelled as trend + seasonal + residual. Trend is fitted by least "
          "squares over per-period block means, so averaging a full season cancels the "
@@ -161,20 +197,20 @@ def sections(lang):
          "실제 CPU는 시간 간 강하게 자기상관되므로(측정된 시차-1 자기상관 0.5–0.9), 분해 예측에 AR(1) "
          "잔차 보정을 더한다: ŷ = (추세+계절) + ρ^h·(직전 실측값 − 직전 적합값). ρ는 잔차의 시차-1 "
          "자기상관, h는 예측 지평이다. 이 항이 모델을 두 기준선보다 우수하게 만든다."),
-        ("H2", "3.2. Point forecast and 95% prediction interval", "3.2. 점예측과 95% 예측구간"),
+        ("H2", "3.3. Point forecast and 95% prediction interval", "3.3. 점예측과 95% 예측구간"),
         ("B",
          "Each forecast has (i) a point estimate and (ii) a 95% prediction interval - the "
          "range the actual future value should fall in with 95% probability. The interval "
          "is sized from out-of-sample one-step backtest error (RMSE): "
          "[y_hat - 1.96*RMSE, y_hat + 1.96*RMSE], so uncertainty is not understated on "
          "short series. Measured coverage (PICP) is 0.93-0.98 versus the nominal 0.95, so "
-         "the interval is well-calibrated (Figure 7). Unlike a black box, exposing "
+         "the interval is well-calibrated (Figure 8). Unlike a black box, exposing "
          "'forecast X% +/- range' makes risk legible (white-box). The engine uses only the "
          "Python standard library.",
          "각 예측은 (i) 점예측치와 (ii) 95% 예측구간(실제 미래값이 95% 확률로 들 범위)으로 구성된다. "
          "구간은 표본 외 1-스텝 백테스트 오차(RMSE)로 산정한다: [예측치 − 1.96·RMSE, 예측치 + "
          "1.96·RMSE]. 짧은 시계열에서 불확실성을 과소평가하지 않기 위함이다. 측정된 커버리지(PICP)는 "
-         "0.93–0.98로 공칭 0.95와 거의 일치해 잘 보정된다(그림 7). 블랙박스와 달리 '예측 X% ± 범위'를 "
+         "0.93–0.98로 공칭 0.95와 거의 일치해 잘 보정된다(그림 8). 블랙박스와 달리 '예측 X% ± 범위'를 "
          "그대로 노출해 위험을 가늠하게 한다(화이트박스). 엔진은 Python 표준 라이브러리만 사용한다."),
 
         ("H1", "4. Integer-Programming Resizing and Real Application",
@@ -272,20 +308,20 @@ def sections(lang):
          "보정된다. 저활용 워크로드는 직전값 기준선이 강해 유의성이 낮은데, 이는 평탄·준유휴 신호의 "
          "본질적 특성으로 정직하게 보고한다."),
         ("IMG", ("fig_forecast_overlay",
-                 "Figure 4. One-step forecast vs actual with the 95% interval.",
-                 "그림 4. 1-스텝 예측 vs 실측과 95% 예측구간.", 5.6)),
+                 "Figure 5. One-step forecast vs actual with the 95% interval.",
+                 "그림 5. 1-스텝 예측 vs 실측과 95% 예측구간.", 5.6)),
         ("IMG", ("fig_error_rmse",
-                 "Figure 5. Forecast error (RMSE): model vs baselines (lower is better).",
-                 "그림 5. 예측 오차(RMSE): 모델 vs 기준선(낮을수록 우수).", 6.0)),
+                 "Figure 6. Forecast error (RMSE): model vs baselines (lower is better).",
+                 "그림 6. 예측 오차(RMSE): 모델 vs 기준선(낮을수록 우수).", 6.0)),
         ("IMG", ("fig_mase",
-                 "Figure 6. MASE - below 1 beats seasonal-naive.",
-                 "그림 6. MASE — 1 미만이면 seasonal-naive 능가.", 6.0)),
+                 "Figure 7. MASE - below 1 beats seasonal-naive.",
+                 "그림 7. MASE — 1 미만이면 seasonal-naive 능가.", 6.0)),
         ("IMG", ("fig_coverage",
-                 "Figure 7. 95% prediction-interval calibration (PICP) vs nominal 0.95.",
-                 "그림 7. 95% 예측구간 보정(PICP) — 공칭 0.95 대비.", 6.0)),
+                 "Figure 8. 95% prediction-interval calibration (PICP) vs nominal 0.95.",
+                 "그림 8. 95% 예측구간 보정(PICP) — 공칭 0.95 대비.", 6.0)),
         ("IMG", ("fig_residual_acf",
-                 "Figure 8. Residual autocorrelation - within the white-noise band = good fit.",
-                 "그림 8. 잔차 자기상관 — 백색잡음 대역 내면 적합 양호.", 6.0)),
+                 "Figure 9. Residual autocorrelation - within the white-noise band = good fit.",
+                 "그림 9. 잔차 자기상관 — 백색잡음 대역 내면 적합 양호.", 6.0)),
 
         ("H1", "8. Related Work and Differentiation", "8. 관련 연구 및 차별화"),
         ("B",

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from sqlalchemy import delete as sql_delete
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -43,6 +44,12 @@ class HostRepository:
         await self.session.refresh(host)
         return host
 
+    async def delete(self, host_id: str) -> None:
+        host = await self.session.get(Host, host_id)
+        if host is not None:
+            await self.session.delete(host)
+            await self.session.commit()
+
 
 class MetricRepository:
     def __init__(self, session: AsyncSession) -> None:
@@ -52,6 +59,10 @@ class MetricRepository:
         self.session.add_all(metrics)
         await self.session.commit()
         return len(metrics)
+
+    async def delete_by_host(self, host_id: str) -> None:
+        await self.session.execute(sql_delete(Metric).where(Metric.host_id == host_id))
+        await self.session.commit()
 
     async def list_by_host(
         self,
@@ -95,6 +106,10 @@ class ActionRepository:
         await self.session.commit()
         await self.session.refresh(action)
         return action
+
+    async def delete_by_host(self, host_id: str) -> None:
+        await self.session.execute(sql_delete(Action).where(Action.host_id == host_id))
+        await self.session.commit()
 
     async def list_by_host(self, host_id: str, limit: int = 50) -> list[Action]:
         result = await self.session.execute(

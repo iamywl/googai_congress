@@ -19,6 +19,7 @@ from .api import (
     routes_gcp,
     routes_history,
     routes_hosts,
+    routes_livetest,
     routes_metrics,
 )
 from .config import settings
@@ -64,6 +65,7 @@ app.include_router(routes_analysis.router)
 app.include_router(routes_catalog.router)
 app.include_router(routes_history.router)
 app.include_router(routes_gcp.router)
+app.include_router(routes_livetest.router)
 
 
 @app.get("/", tags=["Meta"])

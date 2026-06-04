@@ -65,13 +65,28 @@ def text(x, y, s, size, fill, weight="normal", anchor="start", mono=False):
             f'text-anchor="{anchor}" font-family="{fam}">{escape(s)}</text>')
 
 
+def _strwidth(s, size):
+    """Estimate rendered width: CJK/Hangul glyphs are full-width, others ~0.52em."""
+    return sum(size * (1.0 if ord(ch) >= 0x1100 else 0.52) for ch in s)
+
+
+def _fit(s, maxw, size, minsize):
+    """Largest font size <= ``size`` (down to ``minsize``) that fits ``maxw`` px."""
+    while size > minsize and _strwidth(s, size) > maxw:
+        size -= 0.5
+    return size
+
+
 def card(n, x, y, w, h, title, lines):
+    # Vertically centre the title + lines block so taller cards do not look empty.
+    block_h = 26 + len(lines) * 18
+    top = y + (h - block_h) / 2
     parts = [f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="9" fill="{CARD}" stroke="{BORDER}"/>',
-             f'<circle cx="{x+20}" cy="{y+20}" r="12" fill="{ACC}"/>',
-             text(x + 20, y + 24, str(n), 12, "#fff", "bold", "middle"),
-             text(x + 40, y + 25, title, 12.5, INK, "bold")]
+             f'<circle cx="{x+22}" cy="{top+8}" r="13" fill="{ACC}"/>',
+             text(x + 22, top + 12, str(n), 13, "#fff", "bold", "middle"),
+             text(x + 44, top + 13, title, _fit(title, w - 58, 14, 9.5), INK, "bold")]
     for i, ln in enumerate(lines):
-        parts.append(text(x + 14, y + 48 + i * 15, ln, 10, SUB))
+        parts.append(text(x + 16, top + 40 + i * 18, ln, _fit(ln, w - 28, 11.5, 8.5), SUB))
     return "".join(parts)
 
 
@@ -98,27 +113,32 @@ def forecast_sketch(x, y, w, h, label):
 
 
 def build_one(lang, suf):
-    T = TR[lang]; W, H = 1280, 470
+    # 16:9 canvas filled by enlarging each row and the fonts, with sections spread
+    # evenly so the breathing room reads as layout, not dead space.
+    T = TR[lang]; W, H = 1280, 720; cx = W / 2
     svg = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">',
            f'<rect width="{W}" height="{H}" fill="{BG}"/>',
-           text(W / 2, 40, T["title"], 16, INK, "bold", "middle")]
-    cards = T["cards"]; n = len(cards); cw, ch, gap = 178, 96, 18
-    x0 = (W - (n * cw + (n - 1) * gap)) / 2; cy = 170
+           text(cx, 60, T["title"], 18, INK, "bold", "middle")]
+    cards = T["cards"]; n = len(cards); cw, ch, gap = 184, 132, 20
+    x0 = (W - (n * cw + (n - 1) * gap)) / 2; cy = 350
     for i, (title, lines) in enumerate(cards):
         x = x0 + i * (cw + gap)
         svg.append(card(i + 1, x, cy, cw, ch, title, lines))
         if i > 0:
             svg.append(harrow(x0 + i * (cw + gap) - gap, x, cy + ch / 2))
+    # Forecast inset above card 2, enlarged so it carries visual weight.
     c2x = x0 + (cw + gap)
-    svg.append(forecast_sketch(c2x + 16, 70, cw - 32, 56, T["sketch"]))
-    svg.append(f'<line x1="{c2x+cw/2}" y1="138" x2="{c2x+cw/2}" y2="{cy}" stroke="{BORDER}" stroke-width="1" stroke-dasharray="3 3"/>')
-    fx, fy, fw, fh = x0 + 2 * (cw + gap) - 30, cy + ch + 40, 2 * cw + gap + 60, 64
-    svg.append(f'<rect x="{fx}" y="{fy}" width="{fw}" height="{fh}" rx="8" fill="{FORMULA_BG}" stroke="{ACC}" stroke-opacity="0.5"/>')
-    svg.append(text(fx + fw / 2, fy + 26, "peak_load × safety_margin  ≤  target_utilisation × allocation",
-                    13, INK, "bold", "middle", mono=True))
-    svg.append(text(fx + fw / 2, fy + 48, T["f2"], 10, SUB, anchor="middle"))
+    sk_w, sk_y, sk_h = cw + 36, 120, 150
+    svg.append(forecast_sketch(c2x + (cw - sk_w) / 2 + 8, sk_y, sk_w - 16, sk_h, T["sketch"]))
+    svg.append(f'<line x1="{c2x+cw/2}" y1="{sk_y+sk_h+12}" x2="{c2x+cw/2}" y2="{cy}" stroke="{BORDER}" stroke-width="1" stroke-dasharray="3 3"/>')
+    # Wide formula callout — sized so the equation never crosses the box edge.
+    fw, fh = 820, 104; fx = (W - fw) / 2; fy = cy + ch + 58
+    svg.append(f'<rect x="{fx}" y="{fy}" width="{fw}" height="{fh}" rx="10" fill="{FORMULA_BG}" stroke="{ACC}" stroke-opacity="0.5"/>')
+    eq = "peak_load × safety_margin  ≤  target_utilisation × allocation"
+    svg.append(text(fx + fw / 2, fy + 44, eq, _fit(eq, fw - 48, 16, 10), INK, "bold", "middle", mono=True))
+    svg.append(text(fx + fw / 2, fy + 74, T["f2"], _fit(T["f2"], fw - 60, 12, 9), SUB, anchor="middle"))
     svg.append(f'<line x1="{fx+fw/2}" y1="{fy}" x2="{x0+3*(cw+gap)+cw/2}" y2="{cy+ch}" stroke="{ACC}" stroke-width="1" stroke-dasharray="3 3"/>')
-    svg.append(text(W / 2, H - 16, T["cap"], 12, INK, "normal", "middle"))
+    svg.append(text(cx, H - 22, T["cap"], 13, INK, "normal", "middle"))
     svg.append("</svg>")
     txt = "".join(svg)
     (OUT_DIR / f"approach{suf}.svg").write_text(txt, encoding="utf-8")
