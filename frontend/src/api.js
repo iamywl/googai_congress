@@ -124,20 +124,26 @@ function sampleRecommendation(host) {
 }
 
 // Retry transient failures (notably Cloud Run cold-start) before falling back to
-// demo data, so a scale-to-zero backend still shows live data on first load.
-async function tryFetch(path, options, retries = 3) {
+// demo data, so a scale-to-zero backend still shows live data on first load. Each
+// attempt has its own timeout so a stalled connection fails fast and is retried,
+// and the window is wide enough (≈ up to ~45s) to absorb a cold container boot.
+async function tryFetch(path, options, retries = 6) {
   if (!BASE_URL) throw new Error('no backend configured');
   let lastErr;
   for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
     try {
-      const resp = await fetch(`${BASE_URL}${path}`, options);
+      const resp = await fetch(`${BASE_URL}${path}`, { ...options, signal: ctrl.signal });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       return await resp.json();
     } catch (e) {
       lastErr = e;
       if (attempt < retries) {
-        await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+        await new Promise((r) => setTimeout(r, Math.min(2000, 600 * (attempt + 1))));
       }
+    } finally {
+      clearTimeout(timer);
     }
   }
   throw lastErr;

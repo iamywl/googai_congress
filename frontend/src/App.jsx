@@ -45,6 +45,7 @@ export default function App() {
   // utilisation can be recomputed as the allocation is resized. Written/read
   // only inside effects (never during render).
   const baselines = useRef({});
+  const recoverTries = useRef(0);
 
   useEffect(() => {
     fetchMachineTypes().then(({ types }) => setMachineTypes(types));
@@ -73,6 +74,22 @@ export default function App() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadFleet();
   }, [loadFleet]);
+
+  // Cold-start recovery: a scale-to-zero backend can miss the first load and fall
+  // back to demo data. While offline, retry the fleet a few times so the UI flips
+  // to live on its own once the container is warm — no manual reload needed.
+  useEffect(() => {
+    if (live) {
+      recoverTries.current = 0;
+      return undefined;
+    }
+    if (recoverTries.current >= 6) return undefined;
+    const id = setTimeout(() => {
+      recoverTries.current += 1;
+      loadFleet();
+    }, 3000);
+    return () => clearTimeout(id);
+  }, [live, loadFleet]);
 
   useEffect(() => {
     if (!selected) return;
