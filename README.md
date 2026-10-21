@@ -1,4 +1,4 @@
-# MetricLens AI
+﻿# MetricLens AI
 
 경량 시계열 모델 기반 서버 리소스 부하 예측 및 동적 리사이징 최적화 시스템.
 GPU 없이 범용 CPU만으로 부하를 예측하고, 정수 계획법으로 SLO를 보장하는 최소
@@ -68,10 +68,10 @@ cd frontend && npm install && npm run dev
 ## 배포
 
 ```bash
-PROJECT_ID=knudc-yoonwoodev ./scripts/deploy.sh bootstrap
-PROJECT_ID=knudc-yoonwoodev DATABASE_URL=postgresql://... ./scripts/deploy.sh migrate
-PROJECT_ID=knudc-yoonwoodev \
-  CLOUDSQL_INSTANCE=knudc-yoonwoodev:us-central1:metriclens-db ./scripts/deploy.sh deploy
+PROJECT_ID=metriclens-dev ./scripts/deploy.sh bootstrap
+PROJECT_ID=metriclens-dev DATABASE_URL=postgresql://... ./scripts/deploy.sh migrate
+PROJECT_ID=metriclens-dev \
+  CLOUDSQL_INSTANCE=metriclens-dev:us-central1:metriclens-db ./scripts/deploy.sh deploy
 ```
 
 자세한 설계·테스트·스크린샷은 [개발 완료 보고서](docs/development_report.md) 참조.
